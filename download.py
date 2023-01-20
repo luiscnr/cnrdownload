@@ -5,8 +5,8 @@ parser.add_argument("-m", "--mode", help="Mode", choices=["CHECKPY", "CHECK", "D
 parser.add_argument("-d", "--date", help="Date for a single date download")
 parser.add_argument("-ilat", "--insitu_lat", help="In situ lat")
 parser.add_argument("-ilong", "--insitu_long", help="In situ long")
-parser.add_argument("r", "--resolution", choices=["FR", "RR"], help="Resolution. (FR or RR). Default: FR")
-parser.add_argument("l", "--level", choices=["L1B", "L2"], help="Level. (L1B or L2). Default: L2")
+parser.add_argument("-r", "--resolution", choices=["FR", "RR"], help="Resolution. (FR or RR). Default: FR")
+parser.add_argument("-l", "--level", choices=["L1B", "L2"], help="Level. (L1B or L2). Default: L2")
 parser.add_argument("-v", "--verbose", help="Verbose mode.", action="store_true")
 args = parser.parse_args()
 
