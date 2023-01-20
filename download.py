@@ -15,6 +15,7 @@ def main():
 
     if args.mode=="CHECKPY":
         checkpy()
+        return
 
     if not checkpy():
         return
