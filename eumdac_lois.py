@@ -214,36 +214,43 @@ class EUMDAC_LOIS:
             return None
 
         list_products = []
+        idataset = 1
         for product in products:
+            list_products.append(str(product))
             if self.verbose:
-                list_products.append(str(product))
-                print(str(product))
-                print('Orbit type: ' + str(
-                    product.metadata['properties']['acquisitionInformation'][0]['platform']['orbitType']))
-                print('Instrument: ' + product.instrument)
-                print('Satellite: ' + product.satellite)
-                print('Sensing start: ' + str(product.sensing_start))
-                print('Sensing end: ' + str(product.sensing_end))
-                print('Size: ' + str(product.size))
-                # print('Files: ')
-                # for entry in product.entries:
-                #     print(entry)
+                prename = f'[INFO][DATASET {idataset}] '
+                print(f'{prename}{str(product)}')
+                orbit_type = product.metadata['properties']['acquisitionInformation'][0]['platform']['orbitType']
+                print(f'{prename}Orbit type: {orbit_type}')
+                print(f'{prename}Instrument: {product.instrument}')
+                print(f'{prename}Satellite: {product.satellite}')
+                print(f'{prename}Sensing start: {str(product.sensing_start)}')
+                print(f'{prename}Sensing end:: {str(product.sensing_end)}')
+                print(f'{prename}Size: {str(product.size)}')
+                idataset = idataset +1
                 print("----------------------------------------")
 
         return products, list_products, collection_id
 
-    def download_product(self,product,outputdir):
+    def download_product(self,product,outputdir,overwrite):
         if self.verbose:
             print(f'[INFO] Starting download of product {product}...')
         with product.open() as fsrc, \
                 open(os.path.join(outputdir,fsrc.name), mode='wb') as fdst:
-            shutil.copyfileobj(fsrc, fdst)
-            if self.verbose:
-                print(f'[INFO] Download of product {product} finished.')
+            skip = False
+            if overwrite:
+                skip = os.path.exists(fdst)
+            if not skip:
+                shutil.copyfileobj(fsrc, fdst)
+                if self.verbose:
+                    print(f'[INFO] Download of product {product} finished.')
+            else:
+                if self.verbose:
+                    print(f'[INFO] Product {product} already exist. Skipping download.')
 
-    def download_product_from_product_list(self,products,outputdir):
+    def download_product_from_product_list(self,products,outputdir,overwrite):
         for product in products:
-            self.download_product(product,outputdir)
+            self.download_product(product,outputdir,overwrite)
 
     def get_date_min_max_from_date(self, date, hourmin, hourmax):
         if hourmin == -1:
