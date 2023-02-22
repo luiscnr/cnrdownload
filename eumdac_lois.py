@@ -178,17 +178,18 @@ class EUMDAC_LOIS:
             return collections_out[0]
 
     def search_olci_by_point(self, date, resolution, level, lat_point, lon_point, hourmin, hourmax):
-
+        list_products = []
         collection_id = self.get_olci_collection(date, resolution, level, False, False)
+        products = None
         if collection_id is None:
-            return None
+            return products, list_products, collection_id
         if self.verbose:
             print(f'[INFO] Collection ID: {collection_id}')
 
         # GEOGRAPHIC AREA
         geo = self.get_geo_from_point(lat_point, lon_point)
         if geo is None:
-            return None
+            return products, list_products, collection_id
         if self.verbose:
             print(f'[INFO] Geographic area: {geo}')
 
@@ -196,7 +197,7 @@ class EUMDAC_LOIS:
         date, datestr = self.resolve_date_param(date)
         datemin, datemax = self.get_date_min_max_from_date(date, hourmin, hourmax)
         if datemin is None or datemax is None:
-            return None
+            return products, list_products, collection_id
         if self.verbose:
             print(f'[INFO] Search date min: {datemin} Search date max: {datemax}')
 
@@ -211,9 +212,9 @@ class EUMDAC_LOIS:
         if len(products) == 0:
             print(
                 f'[WARNING] No product found for S3 {level} {resolution}  for date {datestr}, lat: {lat_point}, lon:{lon_point}')
-            return None
+            return products, list_products, collection_id
 
-        list_products = []
+
         idataset = 1
         for product in products:
             list_products.append(str(product))
