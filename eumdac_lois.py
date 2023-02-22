@@ -129,10 +129,10 @@ class EUMDAC_LOIS:
         resolutions = ['RR', 'FR']
         levels = ['L1B', 'L2']
         if resolution not in resolutions:
-            print(f'[ERROR] {resolution} is not a valid resolution value. Possible values: FR or RR')
+            print(f'[ERROR] {resolution} is not a valid resolution. Possible values: FR or RR')
             return None
         if level not in levels:
-            print(f'[ERROR] {level} is not a valid resolution value. Possible values: L1B or L2')
+            print(f'[ERROR] {level} is not a valid resolution. Possible values: L1B or L2')
             return None
 
         baseline = '003'
