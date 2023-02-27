@@ -139,7 +139,7 @@ def checkpy():
         from eumdac_lois import EUMDAC_LOIS
         edac = EUMDAC_LOIS(True)
     except:
-        print(f'[ERROR] EUMDAC_LOIS could not be started. Check authorization')
+        print(f'[ERROR] EUMDAC_LOIS could not be started. Check authorization file')
         valid = False
 
     return valid

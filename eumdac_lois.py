@@ -15,12 +15,12 @@ def authorize():
             options.read('credentials.ini')
             if options.has_option('CREDENTIALS','consumer_key') and options.has_option('CREDENTIALS','consumer_secret'):
                 print(f'[INFO] Authorizing credentials from file...')
-                consumer_key = options['CREDENTIALS']['consumer_key']
-                consumer_secret = options['CREDENTIALS']['consumer_secret']
+                consumer_key = options['CREDENTIALS']['consumer_key'].strip()
+                consumer_secret = options['CREDENTIALS']['consumer_secret'].strip()
         if consumer_key is None or consumer_secret is None:
             print(f'[INFO] Authorizing default credentials...')
             consumer_key = 'OZLzfHLwVY68az_e46kBXBfJFWoa'
-            consumer_secret = 'EsfltgYk83QzwsG7FfUowspe4Gka'
+            consumer_secret = 'Esfltk83QzwsG7FfUowspe4Gka'
         credentials = (consumer_key, consumer_secret)
         token = eumdac.AccessToken(credentials)
         print(f"[INFO] This token '{token}' expires {token.expiration}")
