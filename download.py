@@ -73,39 +73,39 @@ def main():
         run_date = start_date
         while run_date <= end_date:
             edac = EUMDAC_LOIS(args.verbose)
-            output_folder = os.path.join(outputdir,run_date.strftime('%Y%m%d'))
+            output_folder = os.path.join(outputdir, run_date.strftime('%Y%m%d'))
             if not os.path.exists(output_folder):
                 os.mkdir(output_folder)
             run_date_str = run_date.strftime('%Y-%m-%d')
-            edac.file_list_search = os.path.join(output_folder,'eum_filelist.txt')
+            edac.file_list_search = os.path.join(output_folder, 'eum_filelist.txt')
 
-            products, product_names, collection_id = edac.search_olci_by_bbox(run_date_str, 'FR', 'L2',[65.0, 90.0, -180.0, 180.0], -1, -1)
+            products, product_names, collection_id = edac.search_olci_by_bbox(run_date_str, 'FR', 'L2',
+                                                                              [65.0, 90.0, -180.0, 180.0], -1, -1)
 
             nfiles = len(product_names)
             if os.path.exists(edac.file_list_search):
                 ndownload = 0
                 ntimes = 1
-                while ndownload<nfiles:
-                    f1 = open(edac.file_list_search,'r')
+                while ndownload < nfiles:
+                    f1 = open(edac.file_list_search, 'r')
                     ndownload = 0
                     for line in f1:
                         pname = line.strip()
-                        foutput = os.path.join(output_folder,f'{pname}.zip')
+                        foutput = os.path.join(output_folder, f'{pname}.zip')
                         if os.path.exists(foutput):
-                            ndownload = ndownload +1
+                            ndownload = ndownload + 1
                             if args.verbose:
                                 print(f'[INFO] Product {pname} already downloaded. Skipping...')
                             continue
-                        b = edac.download_product_byname(pname,collection_id,output_folder,False)
+                        b = edac.download_product_byname(pname, collection_id, output_folder, False)
                         if b:
-                            ndownload = ndownload +1
+                            ndownload = ndownload + 1
                     f1.close()
                     if args.verbose:
                         print(f'[INFO] NDownload {ndownload} 7 {nfiles}')
-                    ntimes = ntimes +1
-                    if ntimes==6:
+                    ntimes = ntimes + 1
+                    if ntimes == 6:
                         break
-
 
             run_date = run_date + timedelta(hours=24)
 
@@ -133,6 +133,13 @@ def checkpy():
         import eumdac
     except:
         print(f'[ERROR] Package eumdac is not available')
+        valid = False
+
+    try:
+        from eumdac_lois import EUMDAC_LOIS
+        edac = EUMDAC_LOIS(True)
+    except:
+        print(f'[ERROR] EUMDAC_LOIS could not be started. Check authorization')
         valid = False
 
     return valid
