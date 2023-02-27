@@ -26,6 +26,8 @@ class EUMDAC_LOIS:
         if self.token is None:
             print('[ERROR] Authorization failed. Please review credentials')
         self.verbose = verbose
+        self.print_info_datasets = False
+        self.file_list_search = None
         self.olci_collections = {
             'EO:EUM:DAT:0409': {
                 'title': 'OLCI Level 1B Full Resolution - Sentinel-3',
@@ -177,6 +179,36 @@ class EUMDAC_LOIS:
         if collections_out[0] != 'NO':
             return collections_out[0]
 
+    def search_olci_impl(self, collection_id, geo, datemin, datemax):
+
+        list_products = []
+
+        # PRODUCTS
+        datastore = eumdac.DataStore(self.token)
+        selected_collection = datastore.get_collection(collection_id)
+        products = selected_collection.search(geo=geo, dtstart=datemin, dtend=datemax)
+
+        if len(products) == 0:
+            return products, list_products
+
+        idataset = 1
+        for product in products:
+            list_products.append(str(product))
+            if self.print_info_datasets:
+                prename = f'[INFO][DATASET {idataset}] '
+                print(f'{prename}{str(product)}')
+                orbit_type = product.metadata['properties']['acquisitionInformation'][0]['platform']['orbitType']
+                print(f'{prename}Orbit type: {orbit_type}')
+                print(f'{prename}Instrument: {product.instrument}')
+                print(f'{prename}Satellite: {product.satellite}')
+                print(f'{prename}Sensing start: {str(product.sensing_start)}')
+                print(f'{prename}Sensing end:: {str(product.sensing_end)}')
+                print(f'{prename}Size: {str(product.size)}')
+                idataset = idataset + 1
+                print("----------------------------------------")
+
+        return products, list_products
+
     def search_olci_by_point(self, date, resolution, level, lat_point, lon_point, hourmin, hourmax):
         list_products = []
         collection_id = self.get_olci_collection(date, resolution, level, False, False)
@@ -201,10 +233,7 @@ class EUMDAC_LOIS:
         if self.verbose:
             print(f'[INFO] Search date min: {datemin} Search date max: {datemax}')
 
-        # PRODUCTS
-        datastore = eumdac.DataStore(self.token)
-        selected_collection = datastore.get_collection(collection_id)
-        products = selected_collection.search(geo=geo, dtstart=datemin, dtend=datemax)
+        products, list_products = self.search_olci_impl(collection_id, geo, datemin, datemax)
 
         if self.verbose:
             print(f'[INFO] {len(products)} datasets found for the given area of interest')
@@ -214,33 +243,80 @@ class EUMDAC_LOIS:
                 f'[WARNING] No product found for S3 {level} {resolution}  for date {datestr}, lat: {lat_point}, lon:{lon_point}')
             return products, list_products, collection_id
 
+        return products, list_products, collection_id
 
-        idataset = 1
-        for product in products:
-            list_products.append(str(product))
-            if self.verbose:
-                prename = f'[INFO][DATASET {idataset}] '
-                print(f'{prename}{str(product)}')
-                orbit_type = product.metadata['properties']['acquisitionInformation'][0]['platform']['orbitType']
-                print(f'{prename}Orbit type: {orbit_type}')
-                print(f'{prename}Instrument: {product.instrument}')
-                print(f'{prename}Satellite: {product.satellite}')
-                print(f'{prename}Sensing start: {str(product.sensing_start)}')
-                print(f'{prename}Sensing end:: {str(product.sensing_end)}')
-                print(f'{prename}Size: {str(product.size)}')
-                idataset = idataset +1
-                print("----------------------------------------")
+    def search_olci_by_bbox(self, date, resolution, level, boundingbox, hourmin, hourmax):
+        list_products = []
+        collection_id = self.get_olci_collection(date, resolution, level, False, False)
+        products = None
+        if collection_id is None:
+            return products, list_products, collection_id
+        if self.verbose:
+            print(f'[INFO] Collection ID: {collection_id}')
+
+        # GEOGRAPHIC AREA
+        geo = self.get_geo_from_bbox(boundingbox)
+        if geo is None:
+            return products, list_products, collection_id
+        if self.verbose:
+            print(f'[INFO] Geographic area: {geo}')
+
+        # DATE
+        date, datestr = self.resolve_date_param(date)
+        datemin, datemax = self.get_date_min_max_from_date(date, hourmin, hourmax)
+        if datemin is None or datemax is None:
+            return products, list_products, collection_id
+        if self.verbose:
+            print(f'[INFO] Search date min: {datemin} Search date max: {datemax}')
+
+        products, list_products = self.search_olci_impl(collection_id, geo, datemin, datemax)
+
+        if self.verbose:
+            print(f'[INFO] {len(products)} datasets found for the given area of interest')
+
+        if len(products) == 0:
+            print(
+                f'[WARNING] No product found for S3 {level} {resolution}  for date {datestr}, bounding box: {boundingbox}')
+            return products, list_products, collection_id
+
+        self.save_file_list(list_products)
 
         return products, list_products, collection_id
 
-    def download_product(self,product,outputdir,overwrite):
+    def save_file_list(self, list_products):
+        if self.file_list_search is None:
+            return
+        try:
+            f1 = open(self.file_list_search, 'w')
+            for p in list_products:
+                f1.write(p)
+                f1.write('\n')
+            f1.close()
+        except:
+            print(f'[WARNING] Error writting file list {self.file_list_search}')
+
+    def download_product_byname(self, product_name, collection_id, outputdir, overwrite):
+        if self.verbose:
+            print(f'[INFO] Search product by name {product_name}...')
+
+        datastore = eumdac.DataStore(self.token)
+        selected_collection = datastore.get_collection(collection_id)
+        try:
+            products = selected_collection.search(title=product_name)
+            for p in products:
+                self.download_product(p, outputdir, overwrite)
+            return True
+        except:
+            return False
+
+    def download_product(self, product, outputdir, overwrite):
         if self.verbose:
             print(f'[INFO] Starting download of product {product}...')
         with product.open() as fsrc, \
-                open(os.path.join(outputdir,fsrc.name), mode='wb') as fdst:
+                open(os.path.join(outputdir, fsrc.name), mode='wb') as fdst:
             skip = False
             if overwrite:
-                skip = os.path.exists(fdst)
+                skip = os.path.exists(os.path.join(outputdir,fsrc.name))
             if not skip:
                 shutil.copyfileobj(fsrc, fdst)
                 if self.verbose:
@@ -249,9 +325,9 @@ class EUMDAC_LOIS:
                 if self.verbose:
                     print(f'[INFO] Product {product} already exist. Skipping download.')
 
-    def download_product_from_product_list(self,products,outputdir,overwrite):
+    def download_product_from_product_list(self, products, outputdir, overwrite):
         for product in products:
-            self.download_product(product,outputdir,overwrite)
+            self.download_product(product, outputdir, overwrite)
 
     def get_date_min_max_from_date(self, date, hourmin, hourmax):
         if hourmin == -1:
