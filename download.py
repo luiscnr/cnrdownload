@@ -1,4 +1,5 @@
 import argparse
+import time
 import os.path
 
 parser = argparse.ArgumentParser(description="Artic resampler")
@@ -11,6 +12,7 @@ parser.add_argument("-ilat", "--insitu_lat", help="In situ lat")
 parser.add_argument("-ilong", "--insitu_long", help="In situ long")
 parser.add_argument("-r", "--resolution", choices=["FR", "RR"], help="Resolution. (FR or RR). Default: FR")
 parser.add_argument("-l", "--level", choices=["L1B", "L2"], help="Level. (L1B or L2). Default: L2")
+parser.add_argument("-cu", "--credentials_user", help="Credentials user from credentials.ini to be used")
 parser.add_argument("-v", "--verbose", help="Verbose mode.", action="store_true")
 args = parser.parse_args()
 
@@ -27,7 +29,7 @@ def main():
 
     if args.mode == "CHECK":
         from eumdac_lois import EUMDAC_LOIS
-        edac = EUMDAC_LOIS(True)
+        edac = EUMDAC_LOIS(True, args.credentials_user)
         outputdir = '/mnt/c/DATA_LUIS/OCTAC_WORK/ARC_TEST'
         # products, product_names, collection_id = edac.search_olci_by_point('2023-01-19', 'FR', 'L2', 45.324091, 12.527398
         #                                                                , -1, -1)
@@ -72,21 +74,30 @@ def main():
             return
         run_date = start_date
         while run_date <= end_date:
-            edac = EUMDAC_LOIS(args.verbose)
+            edac = EUMDAC_LOIS(args.verbose, args.credentials_user)
             output_folder = os.path.join(outputdir, run_date.strftime('%Y%m%d'))
             if not os.path.exists(output_folder):
                 os.mkdir(output_folder)
             run_date_str = run_date.strftime('%Y-%m-%d')
             edac.file_list_search = os.path.join(output_folder, 'eum_filelist.txt')
 
-            products, product_names, collection_id = edac.search_olci_by_bbox(run_date_str, 'FR', 'L2',
-                                                                              [65.0, 90.0, -180.0, 180.0], -1, -1)
+            ntimes = 1
+            nfiles = 0
+            while nfiles == 0 and ntimes <= 5:
+                products, product_names, collection_id = edac.search_olci_by_bbox(run_date_str, 'FR', 'L2',
+                                                                                  [65.0, 90.0, -180.0, 180.0], -1, -1)
+                nfiles = len(product_names)
+                if nfiles == 0:
+                    time.sleep(60)
+                ntimes = ntimes + 1
 
-            nfiles = len(product_names)
-            if os.path.exists(edac.file_list_search):
-                ndownload = 0
+            ndownload = edac.download_product_from_product_list(products, outputdir, False)
+            if args.verbose:
+                print(f'[INFO] NDownload {ndownload} / {nfiles}')
+
+            if os.path.exists(edac.file_list_search) and ndownload < nfiles:
                 ntimes = 1
-                while ndownload < nfiles:
+                while ndownload < nfiles and ntimes <= 5:
                     f1 = open(edac.file_list_search, 'r')
                     ndownload = 0
                     for line in f1:
@@ -102,10 +113,10 @@ def main():
                             ndownload = ndownload + 1
                     f1.close()
                     if args.verbose:
-                        print(f'[INFO] NDownload {ndownload} 7 {nfiles}')
+                        print(f'[INFO] Attempt: {ntimes} NDownload {ndownload} / {nfiles}')
+                    if ndownload<nfiles:
+                        time.sleep(60)
                     ntimes = ntimes + 1
-                    if ntimes == 6:
-                        break
 
             run_date = run_date + timedelta(hours=24)
 
@@ -134,10 +145,9 @@ def checkpy():
     except:
         print(f'[ERROR] Package eumdac is not available')
         valid = False
-
     try:
         from eumdac_lois import EUMDAC_LOIS
-        edac = EUMDAC_LOIS(True)
+        EUMDAC_LOIS(True, args.credentials_user)
     except:
         print(f'[ERROR] EUMDAC_LOIS could not be started. Check authorization file')
         valid = False

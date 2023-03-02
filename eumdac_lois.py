@@ -5,22 +5,29 @@ from datetime import datetime as dt
 from datetime import timedelta
 import os
 
-def authorize():
+
+def authorize(cred_user):
     try:
         consumer_key = None
         consumer_secret = None
-        if os.path.exists('credentials.ini'):
+        file_path = os.path.join(os.path.dirname(__file__), 'credentials.ini')
+        if os.path.exists(file_path):
             import configparser
             options = configparser.ConfigParser()
-            options.read('credentials.ini')
-            if options.has_option('CREDENTIALS','consumer_key') and options.has_option('CREDENTIALS','consumer_secret'):
+            options.read(file_path)
+            key = 'default'
+            if cred_user is not None:
+                key = cred_user
+
+            if options.has_option(key, 'consumer_key') and options.has_option(key, 'consumer_secret'):
                 print(f'[INFO] Authorizing credentials from file...')
-                consumer_key = options['CREDENTIALS']['consumer_key'].strip()
-                consumer_secret = options['CREDENTIALS']['consumer_secret'].strip()
+                consumer_key = options[key]['consumer_key'].strip()
+                consumer_secret = options[key]['consumer_secret'].strip()
         if consumer_key is None or consumer_secret is None:
             print(f'[INFO] Authorizing default credentials...')
             consumer_key = 'OZLzfHLwVY68az_e46kBXBfJFWoa'
-            consumer_secret = 'Esfltk83QzwsG7FfUowspe4Gka'
+            consumer_secret = 'EsfltgYk83QzwsG7FfUowspe4Gka'
+
         credentials = (consumer_key, consumer_secret)
         token = eumdac.AccessToken(credentials)
         print(f"[INFO] This token '{token}' expires {token.expiration}")
@@ -33,8 +40,8 @@ def authorize():
 
 class EUMDAC_LOIS:
 
-    def __init__(self, verbose):
-        self.token = authorize()
+    def __init__(self, verbose, cred_user):
+        self.token = authorize(cred_user)
         if self.token is None:
             print('[ERROR] Authorization failed. Please review credentials')
         self.verbose = verbose
@@ -315,20 +322,23 @@ class EUMDAC_LOIS:
         selected_collection = datastore.get_collection(collection_id)
         try:
             products = selected_collection.search(title=product_name)
+            b = False
             for p in products:
-                self.download_product(p, outputdir, overwrite)
-            return True
+                b = self.download_product(p, outputdir, overwrite)
+            return b
         except:
             return False
 
     def download_product(self, product, outputdir, overwrite):
         if self.verbose:
             print(f'[INFO] Starting download of product {product}...')
+        foutput = None
         with product.open() as fsrc, \
                 open(os.path.join(outputdir, fsrc.name), mode='wb') as fdst:
             skip = False
-            if overwrite:
-                skip = os.path.exists(os.path.join(outputdir,fsrc.name))
+            foutput = os.path.join(outputdir, fsrc.name)
+            if not overwrite:
+                skip = os.path.exists(foutput)
             if not skip:
                 shutil.copyfileobj(fsrc, fdst)
                 if self.verbose:
@@ -336,10 +346,18 @@ class EUMDAC_LOIS:
             else:
                 if self.verbose:
                     print(f'[INFO] Product {product} already exist. Skipping download.')
+        if foutput is not None:
+            return os.path.exists(foutput)
+        else:
+            return False
 
     def download_product_from_product_list(self, products, outputdir, overwrite):
+        ndownloaded = 0
         for product in products:
-            self.download_product(product, outputdir, overwrite)
+            b = self.download_product(product, outputdir, overwrite)
+            if b:
+                ndownloaded = ndownloaded + 1
+        return ndownloaded
 
     def get_date_min_max_from_date(self, date, hourmin, hourmax):
         if hourmin == -1:
