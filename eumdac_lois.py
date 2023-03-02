@@ -337,16 +337,21 @@ class EUMDAC_LOIS:
             print(f'[INFO] Product {product} already exist. Skipping download.')
             return True
 
-        with product.open() as fsrc, \
-                open(os.path.join(outputdir, fsrc.name), mode='wb') as fdst:
-            shutil.copyfileobj(fsrc, fdst)
+        try:
+            with product.open() as fsrc, open(os.path.join(outputdir, fsrc.name), mode='wb') as fdst:
+                shutil.copyfileobj(fsrc, fdst)
+                if self.verbose:
+                    print(f'[INFO] Download of product {product} finished.')
+        except:
             if self.verbose:
-                print(f'[INFO] Download of product {product} finished.')
+                print(f'[INFO] Error downloading product {product}')
+            if os.path.exists(foutput):
+                os.remove(foutput)
 
-        if foutput is not None:
-            return os.path.exists(foutput)
-        else:
-            return False
+
+
+        return os.path.exists(foutput)
+
 
     def download_product_from_product_list(self, products, outputdir, overwrite):
         ndownloaded = 0

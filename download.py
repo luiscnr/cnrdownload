@@ -91,7 +91,7 @@ def main():
                     time.sleep(60)
                 ntimes = ntimes + 1
 
-            ndownload = edac.download_product_from_product_list(products, outputdir, False)
+            ndownload = edac.download_product_from_product_list(products, output_folder, False)
             if args.verbose:
                 print(f'[INFO] NDownload {ndownload} / {nfiles}')
 
