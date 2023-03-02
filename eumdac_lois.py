@@ -332,20 +332,17 @@ class EUMDAC_LOIS:
     def download_product(self, product, outputdir, overwrite):
         if self.verbose:
             print(f'[INFO] Starting download of product {product}...')
-        foutput = None
+        foutput = os.path.join(outputdir,f'{str(product)}.zip')
+        if not overwrite and os.path.exists(foutput):
+            print(f'[INFO] Product {product} already exist. Skipping download.')
+            return True
+
         with product.open() as fsrc, \
                 open(os.path.join(outputdir, fsrc.name), mode='wb') as fdst:
-            skip = False
-            foutput = os.path.join(outputdir, fsrc.name)
-            if not overwrite:
-                skip = os.path.exists(foutput)
-            if not skip:
-                shutil.copyfileobj(fsrc, fdst)
-                if self.verbose:
-                    print(f'[INFO] Download of product {product} finished.')
-            else:
-                if self.verbose:
-                    print(f'[INFO] Product {product} already exist. Skipping download.')
+            shutil.copyfileobj(fsrc, fdst)
+            if self.verbose:
+                print(f'[INFO] Download of product {product} finished.')
+
         if foutput is not None:
             return os.path.exists(foutput)
         else:
