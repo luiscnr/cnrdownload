@@ -201,11 +201,15 @@ class EUMDAC_LOIS:
     def search_olci_impl(self, collection_id, geo, datemin, datemax):
 
         list_products = []
+        products = []
 
         # PRODUCTS
-        datastore = eumdac.DataStore(self.token)
-        selected_collection = datastore.get_collection(collection_id)
-        products = selected_collection.search(geo=geo, dtstart=datemin, dtend=datemax)
+        try:
+            datastore = eumdac.DataStore(self.token)
+            selected_collection = datastore.get_collection(collection_id)
+            products = selected_collection.search(geo=geo, dtstart=datemin, dtend=datemax)
+        except:
+            return products, list_products
 
         if len(products) == 0:
             return products, list_products

@@ -88,7 +88,7 @@ def main():
                                                                                   [65.0, 90.0, -180.0, 180.0], -1, -1)
                 nfiles = len(product_names)
                 if nfiles == 0:
-                    time.sleep(60)
+                    time.sleep(10)
                 ntimes = ntimes + 1
 
             ndownload = edac.download_product_from_product_list(products, output_folder, False)
@@ -147,7 +147,9 @@ def checkpy():
         valid = False
     try:
         from eumdac_lois import EUMDAC_LOIS
+
         EUMDAC_LOIS(True, args.credentials_user)
+
     except:
         print(f'[ERROR] EUMDAC_LOIS could not be started. Check authorization file')
         valid = False
