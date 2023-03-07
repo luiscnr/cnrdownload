@@ -10,6 +10,7 @@ parser.add_argument("-sd", "--start_date", help="Start date for multiple donwloa
 parser.add_argument("-ed", "--end_date", help="En date for multiple download")
 parser.add_argument("-ilat", "--insitu_lat", help="In situ lat")
 parser.add_argument("-ilong", "--insitu_long", help="In situ long")
+parser.add_argument("-t", "--timeliness",help="Timeliness",choices=["NR","NT"])
 parser.add_argument("-r", "--resolution", choices=["FR", "RR"], help="Resolution. (FR or RR). Default: FR")
 parser.add_argument("-l", "--level", choices=["L1B", "L2"], help="Level. (L1B or L2). Default: L2")
 parser.add_argument("-cu", "--credentials_user", help="Credentials user from credentials.ini to be used")
@@ -72,6 +73,10 @@ def main():
         if end_date < start_date:
             print(f'[ERROR] {end_date} must be greater or equal than {start_date}')
             return
+        timeliness = 'NT'
+        if args.timeliness:
+            timeliness = args.timeliness
+
         run_date = start_date
         while run_date <= end_date:
             edac = EUMDAC_LOIS(args.verbose, args.credentials_user)
@@ -85,7 +90,7 @@ def main():
             nfiles = 0
             while nfiles == 0 and ntimes <= 5:
                 products, product_names, collection_id = edac.search_olci_by_bbox(run_date_str, 'FR', 'L2',
-                                                                                  [65.0, 90.0, -180.0, 180.0], -1, -1)
+                                                                                  [65.0, 90.0, -180.0, 180.0], -1, -1, timeliness)
                 nfiles = len(product_names)
                 if nfiles == 0:
                     time.sleep(10)

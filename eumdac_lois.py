@@ -198,7 +198,7 @@ class EUMDAC_LOIS:
         if collections_out[0] != 'NO':
             return collections_out[0]
 
-    def search_olci_impl(self, collection_id, geo, datemin, datemax):
+    def search_olci_impl(self, collection_id, geo, datemin, datemax, timeliness):
 
         list_products = []
         products = []
@@ -215,7 +215,16 @@ class EUMDAC_LOIS:
             return products, list_products
 
         idataset = 1
+        products_timeliness = []
         for product in products:
+            pname = str(product)
+            add = True
+            if timeliness is not None:
+                if pname.find(timeliness)<0:
+                    add = False
+            if not add:
+                continue
+            products_timeliness.append(product)
             list_products.append(str(product))
             if self.print_info_datasets:
                 prename = f'[INFO][DATASET {idataset}] '
@@ -230,9 +239,9 @@ class EUMDAC_LOIS:
                 idataset = idataset + 1
                 print("----------------------------------------")
 
-        return products, list_products
+        return products_timeliness, list_products
 
-    def search_olci_by_point(self, date, resolution, level, lat_point, lon_point, hourmin, hourmax):
+    def search_olci_by_point(self, date, resolution, level, lat_point, lon_point, hourmin, hourmax,timeliness):
         list_products = []
         collection_id = self.get_olci_collection(date, resolution, level, False, False)
         products = None
@@ -256,7 +265,7 @@ class EUMDAC_LOIS:
         if self.verbose:
             print(f'[INFO] Search date min: {datemin} Search date max: {datemax}')
 
-        products, list_products = self.search_olci_impl(collection_id, geo, datemin, datemax)
+        products, list_products = self.search_olci_impl(collection_id, geo, datemin, datemax,timeliness)
 
         if self.verbose:
             print(f'[INFO] {len(products)} datasets found for the given area of interest')
@@ -268,7 +277,8 @@ class EUMDAC_LOIS:
 
         return products, list_products, collection_id
 
-    def search_olci_by_bbox(self, date, resolution, level, boundingbox, hourmin, hourmax):
+    #timeliness: NT or NR
+    def search_olci_by_bbox(self, date, resolution, level, boundingbox, hourmin, hourmax,timeliness):
         list_products = []
         collection_id = self.get_olci_collection(date, resolution, level, False, False)
         products = None
@@ -292,14 +302,14 @@ class EUMDAC_LOIS:
         if self.verbose:
             print(f'[INFO] Search date min: {datemin} Search date max: {datemax}')
 
-        products, list_products = self.search_olci_impl(collection_id, geo, datemin, datemax)
+        products, list_products = self.search_olci_impl(collection_id, geo, datemin, datemax,timeliness)
 
         if self.verbose:
             print(f'[INFO] {len(products)} datasets found for the given area of interest')
 
         if len(products) == 0:
             print(
-                f'[WARNING] No product found for S3 {level} {resolution}  for date {datestr}, bounding box: {boundingbox}')
+                f'[WARNING] No product found for S3 {level} {resolution}  for date {datestr}, bounding box: {boundingbox}, timeliness: {timeliness}')
             return products, list_products, collection_id
 
         self.save_file_list(list_products)
