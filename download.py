@@ -15,6 +15,7 @@ parser.add_argument("-r", "--resolution", choices=["FR", "RR"], help="Resolution
 parser.add_argument("-l", "--level", choices=["L1B", "L2"], help="Level. (L1B or L2). Default: L2")
 parser.add_argument("-cu", "--credentials_user", help="Credentials user from credentials.ini to be used")
 parser.add_argument("-v", "--verbose", help="Verbose mode.", action="store_true")
+parser.add_argument("-check", "--check_param", help="Check param mode.", action="store_true")
 args = parser.parse_args()
 
 
@@ -52,11 +53,14 @@ def main():
         if not args.start_date:
             print('Start date is not defined')
             return
-        start_date_str = args.start_date
-        if args.end_date:
-            end_date_str = args.end_date
-        else:
-            end_date_str = args.start_date
+        # start_date_str = args.start_date
+        # if args.end_date:
+        #     end_date_str = args.end_date
+        # else:
+        #     end_date_str = args.start_date
+        start_date, end_date = get_dates_from_arg()
+        if start_date is None or end_date is None:
+            return
         outputdir = args.output
         if not os.path.exists(outputdir):
             try:
@@ -64,18 +68,32 @@ def main():
             except:
                 print(f'[ERROR] {outputdir} does not exist and could not be created')
                 return
-        try:
-            start_date = dt.strptime(start_date_str, '%Y-%m-%d')
-            end_date = dt.strptime(end_date_str, '%Y-%m-%d')
-        except:
-            print(f'[ERROR] {start_date_str} and/or {end_date_str} are not in the correct format: YYYY-mm-dd')
-            return
+        # try:
+        #     start_date = dt.strptime(start_date_str, '%Y-%m-%d')
+        #     end_date = dt.strptime(end_date_str, '%Y-%m-%d')
+        # except:
+        #     print(f'[ERROR] {start_date_str} and/or {end_date_str} are not in the correct format: YYYY-mm-dd')
+        #     return
         if end_date < start_date:
             print(f'[ERROR] {end_date} must be greater or equal than {start_date}')
             return
+
+        print(f'[INFO] Download start date: {start_date}')
+        print(f'[INFO] Download end date: {end_date}')
         timeliness = 'NT'
+
         if args.timeliness:
             timeliness = args.timeliness
+            print(f'[INFO] Timeliness manually set to: {timeliness}')
+        else:
+            delta_t = dt.now().replace(hour=0, minute=0, second=0, microsecond=0) - end_date.replace(hour=0, minute=0,second=0,microsecond=0)
+            ndays = delta_t.days
+            if ndays<8:
+                timeliness = 'NR'
+            print(f'[INFO] Days: {ndays} Timeliness automatically set to: {timeliness}')
+
+        if args.check_param:
+            return
 
         run_date = start_date
         while run_date <= end_date:
@@ -124,6 +142,36 @@ def main():
                     ntimes = ntimes + 1
 
             run_date = run_date + timedelta(hours=24)
+
+def get_dates_from_arg():
+    from datetime import datetime as dt
+    from datetime import timedelta
+    start_date = None
+    end_date = None
+    if args.start_date:
+        try:
+            start_date = dt.strptime(args.start_date,'%Y-%m-%d')
+        except:
+            try:
+                tdelta = int(args.start_date)
+                start_date = dt.now() + timedelta(days=tdelta)
+                start_date = start_date.replace(hour=12, minute=0, second=0, microsecond=0)
+            except:
+                print(f'[ERROR] Start date {args.start_date} is not in the correct format: YYYY-mm-dd or integer')
+    if args.end_date:
+        try:
+            end_date = dt.strptime(args.end_date,'%Y-%m-%d')
+        except:
+            try:
+                tdelta = int(args.end_date)
+                end_date = dt.now() + timedelta(days=tdelta)
+                end_date = end_date.replace(hour=12,minute=0,second=0,microsecond=0)
+            except:
+                print(f'[ERROR] End date {args.end_date} is not in the correct format: YYYY-mm-dd or integer')
+    if args.start_date and not args.end_date:
+        end_date = start_date
+
+    return start_date, end_date
 
 
 def checkpy():
