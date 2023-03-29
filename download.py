@@ -102,7 +102,14 @@ def main():
             if not os.path.exists(output_folder):
                 os.mkdir(output_folder)
             run_date_str = run_date.strftime('%Y-%m-%d')
-            edac.file_list_search = os.path.join(output_folder, 'eum_filelist.txt')
+            file_list = os.path.join(output_folder, 'eum_filelist.txt')
+            if os.path.exists(file_list):
+                file_list_nrt = os.path.join(output_folder,'eum_filelist_nrt.txt')
+                if os.path.exists(file_list_nrt):
+                    os.remove(file_list)
+                else:
+                    os.rename(file_list, file_list_nrt)
+            edac.file_list_search = file_list
 
             ntimes = 1
             nfiles = 0
