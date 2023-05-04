@@ -296,6 +296,7 @@ class EUMDAC_LOIS:
 
         # DATE
         date, datestr = self.resolve_date_param(date)
+        print('--------> ',date,hourmin,hourmax)
         datemin, datemax = self.get_date_min_max_from_date(date, hourmin, hourmax)
         if datemin is None or datemax is None:
             return products, list_products, collection_id
