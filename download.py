@@ -319,6 +319,7 @@ def main():
         #WORKS WITH CONFIG FILE (args.config_file)
         #IF GRANULES ARE AVAILABLE IN SOURCE FOLDERS, THEY ARE DIRECTLY COPYIED TO OUTPUT
         #IF GANULES ARE NOT AVAILABLE, THEY'RE DOWNLAODED
+        from datetime import datetime as dt
         if not args.config_file:
             print('[ERROR] Argument config_file is compulsory with AERONET_DOWNLOAD mode')
             return
