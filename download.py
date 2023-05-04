@@ -371,8 +371,8 @@ def main():
                 fgranule = get_fgranule(source_folder,datehere,granule_ref)
                 if fgranule is not None:
                     name_granule = fgranule.split('/')[-1]
-                    fout = os.path.join(foutput,name_granule)
-                    print(f'[INFO] Copying {name_granule} to {foutput}')
+                    fout = os.path.join(output_path,name_granule)
+                    print(f'[INFO] Copying {name_granule} to {fout}')
                     shutil.copy(fgranule,fout)
                     break
                 else:
