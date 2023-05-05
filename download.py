@@ -336,7 +336,6 @@ def main():
         if not options.has_section(section):
             print(f'[ERROR] {section} section is not available in config. file: {config_file}')
             return
-
         file_granules = None
         if options.has_option(section, 'file_granules'):
             file_granules = options[section]['file_granules']
@@ -370,8 +369,9 @@ def main():
         if options.has_option(section,'level'):
             level = options[section]['level']
 
+        ntodownload = 0
+        ndownload = 0
         edac = EUMDAC_LOIS(True, args.credentials_user)
-
         f1 = open(file_granules, 'r')
         for line in f1:
             lines = line.split(';')
@@ -402,12 +402,14 @@ def main():
                         print(f'[INFO] Product {granule} already downloaded. Skipping...')
                     continue
                 print(f'[INFO] Donwloading granule: {granule}')
+                ntodownload = ntodownload + 1
                 collection_id = edac.get_olci_collection(datehere, resolution, level, False, False)
                 b = edac.download_product_byname(granule, collection_id, output_path, False)
                 if b:
                     ndownload = ndownload + 1
         f1.close()
-
+        print(f'[INFO] Granules to be downloaded: {ntodownload}')
+        print(f'[INFO] Granules downloaded: {ndownload}')
 
 def get_fgranule(source_folder, datehere, granule_ref):
     yearstr = datehere.strftime('%Y')
