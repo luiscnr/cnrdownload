@@ -166,6 +166,7 @@ def main():
         from eumdac_lois import EUMDAC_LOIS
         from datetime import datetime as dt
         from datetime import timedelta
+        import time
 
         outputdir = get_output_dir()
         if outputdir is None:
