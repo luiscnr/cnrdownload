@@ -340,11 +340,8 @@ class EUMDAC_LOIS:
         selected_collection = datastore.get_collection(collection_id)
         try:
             products = selected_collection.search(title=product_name)
-            print(products)
             b = False
             for p in products:
-                print(p)
-                print('------------------------------------')
                 b = self.download_product(p, outputdir, overwrite)
             return b
         except:

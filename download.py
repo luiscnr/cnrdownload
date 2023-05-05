@@ -30,7 +30,10 @@ def only_test():
     edac = EUMDAC_LOIS(True, args.credentials_user)
     limits = [58, 59, 17, 18]
     product, product_names, collection_id = edac.search_olci_by_bbox('2016-05-06', 'FR', 'L1B', limits, -1,-1, 'NT')
-    print(product_names)
+    print(product_names[0])
+    outputpath='/mnt/c/DATA_LUIS/OCTAC_WORK/ARC_TEST'
+    edac.download_product_byname(product_names[0],collection_id,outputpath,False)
+
     return True
 def main():
     print('STARTED')
@@ -375,10 +378,10 @@ def main():
         f1 = open(file_granules, 'r')
         for line in f1:
             lines = line.split(';')
-            datestr = lines[0]
+            datestr = lines[0].strip()
             datehere = dt.strptime(datestr, '%Y-%m-%d')
 
-            granule = lines[1]
+            granule = lines[1].strip()
             granule_ref = granule.strip()[0:32]
             make_download = True
             for source_folder in source_folders:
@@ -404,7 +407,7 @@ def main():
                 print(f'[INFO] Donwloading granule: {granule}')
                 ntodownload = ntodownload + 1
                 collection_id = edac.get_olci_collection(datehere, resolution, level, False, False)
-                b = edac.download_product_byname(granule, collection_id, output_path, False)
+                b = edac.download_product_byname(granule.strip(), collection_id, output_path, False)
                 if b:
                     ndownload = ndownload + 1
         f1.close()
