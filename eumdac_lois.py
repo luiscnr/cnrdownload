@@ -337,14 +337,14 @@ class EUMDAC_LOIS:
             print(f'[INFO] Search product by name {product_name}...')
 
         datastore = eumdac.DataStore(self.token)
-        print(datastore)
         selected_collection = datastore.get_collection(collection_id)
-        print(selected_collection)
         try:
             products = selected_collection.search(title=product_name)
             print(products)
             b = False
             for p in products:
+                print(p)
+                print('------------------------------------')
                 b = self.download_product(p, outputdir, overwrite)
             return b
         except:
