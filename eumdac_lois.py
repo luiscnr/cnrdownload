@@ -52,7 +52,7 @@ class EUMDAC_LOIS:
                 'title': 'OLCI Level 1B Full Resolution - Sentinel-3',
                 'resolution': 'FR',
                 'level': 'L1B',
-                'start_date': '2016-10-20',
+                'start_date': '2021-01-01',
                 'end_date': 'TODAY',
             },
             'EO:EUM:DAT:0577': {
@@ -60,7 +60,7 @@ class EUMDAC_LOIS:
                 'resolution': 'FR',
                 'level': 'L1B',
                 'start_date': '2016-04-25',
-                'end_date': '2019-10-29',
+                'end_date': '2019-10-30',
                 'baseline': '002'
             },
             'EO:EUM:DAT:0407': {
@@ -159,6 +159,9 @@ class EUMDAC_LOIS:
         baseline = '003'
         if resolution == 'RR':
             baseline = '002'
+        if resolution == 'FR' and level=='L1B':
+            baseline = '002'
+
         collections_out = ['NO', 'NO']  # 0:nrt collection #1:reproc collection
         for collection in self.olci_collections:
             if resolution != self.olci_collections[collection]['resolution']:

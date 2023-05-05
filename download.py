@@ -3,27 +3,40 @@ import os.path
 import shutil
 
 parser = argparse.ArgumentParser(description="Artic resampler")
-parser.add_argument("-m", "--mode", help="Mode", choices=["CHECKPY", "CHECK", "DOWNLOAD", "ARCDOWNLOAD","BALDOWNLOAD","AERONET_CHECK","AERONET_DOWNLOAD"], required=True)
+parser.add_argument("-m", "--mode", help="Mode",
+                    choices=["CHECKPY", "CHECK", "DOWNLOAD", "ARCDOWNLOAD", "BALDOWNLOAD", "AERONET_CHECK",
+                             "AERONET_DOWNLOAD"], required=True)
 parser.add_argument("-o", "--output", help="Ouput directory for downloads")
 parser.add_argument("-d", "--date", help="Date for a single date download")
 parser.add_argument("-sd", "--start_date", help="Start date for multiple donwload")
 parser.add_argument("-ed", "--end_date", help="En date for multiple download")
 parser.add_argument("-ilat", "--insitu_lat", help="In situ lat")
 parser.add_argument("-ilong", "--insitu_long", help="In situ long")
-parser.add_argument("-aoc","--aeronetoc_file",help="Aeronet OC NetCDF File")
-parser.add_argument("-exp","--extracts_path",help="Extract path to check Aeronet Files")
+parser.add_argument("-aoc", "--aeronetoc_file", help="Aeronet OC NetCDF File")
+parser.add_argument("-exp", "--extracts_path", help="Extract path to check Aeronet Files")
 parser.add_argument("-t", "--timeliness", help="Timeliness", choices=["NR", "NT"])
 parser.add_argument("-r", "--resolution", choices=["FR", "RR"], help="Resolution. (FR or RR). Default: FR")
 parser.add_argument("-l", "--level", choices=["L1B", "L2"], help="Level. (L1B or L2). Default: L2")
-parser.add_argument("-c", "--config_file",help="Config file")
+parser.add_argument("-c", "--config_file", help="Config file")
 parser.add_argument("-cu", "--credentials_user", help="Credentials user from credentials.ini to be used")
 parser.add_argument("-v", "--verbose", help="Verbose mode.", action="store_true")
 parser.add_argument("-check", "--check_param", help="Check param mode.", action="store_true")
 args = parser.parse_args()
 
-
+def only_test():
+    if not args.check_param:
+        return False
+    from eumdac_lois import EUMDAC_LOIS
+    edac = EUMDAC_LOIS(True, args.credentials_user)
+    limits = [58, 59, 17, 18]
+    product, product_names, collection_id = edac.search_olci_by_bbox('2016-05-06', 'FR', 'L1B', limits, -1,-1, 'NT')
+    print(product_names)
+    return True
 def main():
     print('STARTED')
+
+    if only_test():
+        return
 
     if args.mode == "CHECKPY":
         checkpy()
@@ -252,7 +265,7 @@ def main():
         time_array = np.array(dataset.variables['Time'])
         time_list = []
         for time in time_array:
-            time_here = (dt(1970,1,1)+timedelta(seconds=time)).replace(hour=0,minute=0,second=0,microsecond=0)
+            time_here = (dt(1970, 1, 1) + timedelta(seconds=time)).replace(hour=0, minute=0, second=0, microsecond=0)
             if time_here not in time_list:
                 time_list.append(time_here)
         dataset.close()
@@ -263,23 +276,30 @@ def main():
         if args.extracts_path:
             extracts_path = args.extracts_path
         info_extracts = get_info_from_extract_path(extracts_path)
-        for this_date  in info_extracts['S3A']:
-            print(this_date,info_extracts['S3A'][this_date])
+        for this_date in info_extracts['S3A']:
+            print(this_date, info_extracts['S3A'][this_date])
 
         lines = []
-        #time_limit = dt(2018,8,24)
+        # time_limit = dt(2018,8,24)
+        level = 'L2'
+        resolution = 'FR'
+        if args.level:
+            level = args.level
+        if args.resolution:
+            resolution = args.resolution
         for time in time_list:
-            #if time<time_limit:
+            # if time<time_limit:
             #    continue
             time_str = time.strftime('%Y-%m-%d')
-            product, product_names, collection_id = edac.search_olci_by_bbox(time_str, 'FR', 'L2', limits, -1, -1,'NT')
+            product, product_names, collection_id = edac.search_olci_by_bbox(time_str, resolution, level, limits, -1,
+                                                                             -1, 'NT')
 
             for namep in product_names:
                 platform, datestr, hours_start, hours_end = get_datestr_and_hours(namep)
                 append = True
                 if info_extracts is not None and platform is not None and platform in info_extracts:
                     if datestr in info_extracts[platform]:
-                        if hours_start<=info_extracts[platform][datestr]<=hours_end:
+                        if hours_start <= info_extracts[platform][datestr] <= hours_end:
                             append = False
                             print(f'There is already a extract for: {namep}')
                 if append:
@@ -287,43 +307,25 @@ def main():
                     print(line_here)
                     lines.append(line_here)
 
-
         file_out = 'ListGranules.csv'
         if args.output:
             file_out = args.output
-        f1 = open(file_out,'w')
+        f1 = open(file_out, 'w')
         for line in lines:
             f1.write(line)
             f1.write('\n')
         f1.close()
 
-        # outputdir = '/mnt/c/DATA_LUIS/OCTAC_WORK/ARC_TEST'
-        # edac.file_list_search = '/mnt/c/DATA_LUIS/OCTAC_WORK/ARC_TEST/file_list.txt'
-        # product, product_names, collection_id = edac.search_olci_by_bbox('2022-07-15', 'FR', 'L2',limits, -1, -1,'NT')
-        # print(product_names)
-        # outputdir = get_output_dir()
-        # if outputdir is None:
-        #     return
-
-
-
-        # start_date, end_date = get_dates_from_arg()
-        # if start_date is None or end_date is None:
-        #     return
-        #
-        # print(f'[INFO] Download start date: {start_date}')
-        # print(f'[INFO] Download end date: {end_date}')
-
-
     if args.mode == 'AERONET_DOWNLOAD':
-        #WORKS WITH CONFIG FILE (args.config_file)
-        #IF GRANULES ARE AVAILABLE IN SOURCE FOLDERS, THEY ARE DIRECTLY COPYIED TO OUTPUT
-        #IF GANULES ARE NOT AVAILABLE, THEY'RE DOWNLAODED
+        # WORKS WITH CONFIG FILE (args.config_file)
+        # IF GRANULES ARE AVAILABLE IN SOURCE FOLDERS, THEY ARE DIRECTLY COPYIED TO OUTPUT
+        # IF GANULES ARE NOT AVAILABLE, THEY'RE DOWNLAODED
+        from eumdac_lois import EUMDAC_LOIS
         from datetime import datetime as dt
         if not args.config_file:
             print('[ERROR] Argument config_file is compulsory with AERONET_DOWNLOAD mode')
             return
-        config_file =args.config_file
+        config_file = args.config_file
         if not os.path.exists(config_file):
             print(f'[ERROR] Config file {config_file} does not exist')
             return
@@ -336,7 +338,7 @@ def main():
             return
 
         file_granules = None
-        if options.has_option(section,'file_granules'):
+        if options.has_option(section, 'file_granules'):
             file_granules = options[section]['file_granules']
         else:
             print(f'[ERROR] Option file_granules is not available in section {section} in config file {config_file}')
@@ -351,65 +353,96 @@ def main():
         if not os.path.exists(output_path):
             print(f'[ERROR] output_path: {output_path} does not exist')
             return
+
         source_folders = []
-        if options.has_option(section,'source_folders'):
+        if options.has_option(section, 'source_folders'):
             sf = options[section]['source_folders']
             source_folders = sf.strip().split(',')
-        if len(source_folders)>0:
+        if len(source_folders) > 0:
             for source_folder in source_folders:
                 if not os.path.exists(source_folder):
                     print(f'[ERROR] Source folder: {source_folder} does not exist')
 
-        f1 = open(file_granules,'r')
+        resolution = 'FR'
+        level = 'L2'
+        if options.has_option(section,'resolution'):
+            resolution = options[section]['resolution']
+        if options.has_option(section,'level'):
+            level = options[section]['level']
+
+        edac = EUMDAC_LOIS(True, args.credentials_user)
+
+        f1 = open(file_granules, 'r')
         for line in f1:
             lines = line.split(';')
             datestr = lines[0]
-            datehere = dt.strptime(datestr,'%Y-%m-%d')
+            datehere = dt.strptime(datestr, '%Y-%m-%d')
+
             granule = lines[1]
             granule_ref = granule.strip()[0:32]
+            make_download = True
             for source_folder in source_folders:
-                fgranule = get_fgranule(source_folder,datehere,granule_ref)
+                fgranule = get_fgranule(source_folder, datehere, granule_ref)
                 if fgranule is not None:
                     name_granule = fgranule.split('/')[-1]
-                    fout = os.path.join(output_path,name_granule)
-                    print(f'[INFO] Copying {name_granule} to {fout}')
-                    shutil.copy(fgranule,fout)
+                    fout = os.path.join(output_path, name_granule)
+                    if os.path.exists(fout):
+                        print(f'[INFO] {name_granule} is already available in {output_path}. Skipping...')
+                    else:
+                        print(f'[INFO] Copying {name_granule} to {output_path}')
+                        shutil.copy(fgranule, fout)
+                    make_download = False
                     break
-                else:
-                    print(f'[INFO] Downloading granule: {granule}')
+            if make_download:
+                print(f'[INFO] Granule {granule} was not found in source folders. Preparing download....')
+                foutput = os.path.join(output_path, f'{granule}.zip')
+                if os.path.exists(foutput):
+                    ndownload = ndownload + 1
+                    if args.verbose:
+                        print(f'[INFO] Product {granule} already downloaded. Skipping...')
+                    continue
+                print(f'[INFO] Donwloading granule: {granule}')
+                collection_id = edac.get_olci_collection(datehere, resolution, level, False, False)
+                b = edac.download_product_byname(granule, collection_id, output_path, False)
+                if b:
+                    ndownload = ndownload + 1
         f1.close()
 
-def get_fgranule(source_folder,datehere,granule_ref):
+
+def get_fgranule(source_folder, datehere, granule_ref):
     yearstr = datehere.strftime('%Y')
     jjjstr = datehere.strftime('%j')
-    path = os.path.join(source_folder,yearstr,jjjstr)
+    path = os.path.join(source_folder, yearstr, jjjstr)
     fgranule = None
     if os.path.exists(path):
         for name in os.listdir(path):
             if name.startswith(granule_ref):
-                fgranule = os.path.join(path,name)
+                fgranule = os.path.join(path, name)
                 break
     return fgranule
+
+
 def get_info_from_extract_path(extract_path):
     if extract_path is None:
         return None
     if not os.path.exists(extract_path):
         return None
-    info = {key: {} for key in ['S3A','S3B']}
+    info = {key: {} for key in ['S3A', 'S3B']}
     for name in os.listdir(extract_path):
         if not name.startswith('S3'):
             continue
-        platform,start_date,end_date = get_dates_and_platform_from_file_name(name)
-        date_ref = start_date.replace(hour=0,minute=0,second=0,microsecond=0)
+        platform, start_date, end_date = get_dates_and_platform_from_file_name(name)
+        date_ref = start_date.replace(hour=0, minute=0, second=0, microsecond=0)
         date_str = start_date.strftime('%Y-%m-%d')
-        hours = ((start_date-date_ref).total_seconds())/3600
+        hours = ((start_date - date_ref).total_seconds()) / 3600
         info[platform][date_str] = hours
     return info
+
 
 def get_datestr_and_hours(name):
     platform, start_date, end_date = get_dates_and_platform_from_file_name(name)
     if platform is None or start_date is None or end_date is None:
-        return platform,None,start_date,end_date
+        return platform, None, start_date, end_date
 
     datestr = start_date.strftime('%Y-%m-%d')
     start_date_ref = start_date.replace(hour=0, minute=0, second=0, microsecond=0)
@@ -417,7 +450,8 @@ def get_datestr_and_hours(name):
     hours_start = ((start_date - start_date_ref).total_seconds()) / 3600
     hours_end = ((end_date - end_date_ref).total_seconds()) / 3600
 
-    return platform,datestr,hours_start,hours_end
+    return platform, datestr, hours_start, hours_end
+
 
 def get_dates_and_platform_from_file_name(name):
     from datetime import datetime as dt
@@ -435,14 +469,16 @@ def get_dates_and_platform_from_file_name(name):
 
 def get_limits_site(site):
     limits = None
-    if site=='Gustav_Dalen_Tower':
-        limits = [58,59,17,18]
-    if site=='Irbe_Lighthouse':
-        limits = [57.25,58.25,21.25,22.25]
-    if site=='Helsinki_Lighthouse':
-        limits = [59.5,60.5,24.5,25.5]
+    if site == 'Gustav_Dalen_Tower':
+        limits = [58, 59, 17, 18]
+    if site == 'Irbe_Lighthouse':
+        limits = [57.25, 58.25, 21.25, 22.25]
+    if site == 'Helsinki_Lighthouse':
+        limits = [59.5, 60.5, 24.5, 25.5]
 
     return limits
+
+
 def get_output_dir():
     if not args.output:
         print('Output directory is not defined')
@@ -455,6 +491,8 @@ def get_output_dir():
             print(f'[ERROR] {outputdir} does not exist and could not be created')
             return None
     return outputdir
+
+
 def get_timeliness(end_date):
     from datetime import datetime as dt
     timeliness = 'NT'
@@ -472,8 +510,8 @@ def get_timeliness(end_date):
         print(f'[INFO] Days: {ndays} Timeliness automatically set to: {timeliness}')
     return timeliness
 
-def get_dates_from_arg():
 
+def get_dates_from_arg():
     if not args.start_date:
         print('Start date is not defined')
         return None, None
@@ -508,7 +546,7 @@ def get_dates_from_arg():
     if start_date is not None and end_date is not None:
         if end_date < start_date:
             print(f'[ERROR] {end_date} must be greater or equal than {start_date}')
-            return None,None
+            return None, None
 
     return start_date, end_date
 
