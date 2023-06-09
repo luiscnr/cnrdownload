@@ -187,7 +187,11 @@ def main():
         run_date = start_date
         while run_date <= end_date:
             edac = EUMDAC_LOIS(args.verbose, args.credentials_user)
-            output_folder = os.path.join(outputdir, run_date.strftime('%Y%m%d'))
+            output_year = os.path.join(outputdir, run_date.strftime('%Y'))
+            output_folder = os.path.join(output_year, run_date.strftime('%j'))
+            if not os.path.exists(output_year):
+                os.mkdir(output_year)
+            #output_folder = os.path.join(outputdir, run_date.strftime('%Y%m%d'))
             if not os.path.exists(output_folder):
                 os.mkdir(output_folder)
             run_date_str = run_date.strftime('%Y-%m-%d')
@@ -204,7 +208,7 @@ def main():
             nfiles = 0
             while nfiles == 0 and ntimes <= 5:
                 products, product_names, collection_id = edac.search_olci_by_bbox(run_date_str, 'FR', 'L1B',
-                                                                                  [53.25, 65.85, 9.25, 30.25], -1, -1,
+                                                                                  [53.25, 65.85, 9.25, 30.25], 8, 9,
                                                                                   timeliness)
                 nfiles = len(product_names)
                 if nfiles == 0:
