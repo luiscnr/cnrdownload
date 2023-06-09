@@ -21,6 +21,7 @@ parser.add_argument("-c", "--config_file", help="Config file")
 parser.add_argument("-cu", "--credentials_user", help="Credentials user from credentials.ini to be used")
 parser.add_argument("-v", "--verbose", help="Verbose mode.", action="store_true")
 parser.add_argument("-check", "--check_param", help="Check param mode.", action="store_true")
+parser.add_argument("-ol", "--only_list", help="Only list, no download.", action="store_true")
 args = parser.parse_args()
 
 def only_test():
@@ -208,12 +209,16 @@ def main():
             nfiles = 0
             while nfiles == 0 and ntimes <= 5:
                 products, product_names, collection_id = edac.search_olci_by_bbox(run_date_str, 'FR', 'L1B',
-                                                                                  [53.25, 65.85, 9.25, 30.25], 8, 9,
+                                                                                  [53.25, 65.85, 9.25, 30.25], 3, 18,
                                                                                   timeliness)
                 nfiles = len(product_names)
                 if nfiles == 0:
                     time.sleep(10)
                 ntimes = ntimes + 1
+
+            if args.only_list:
+                run_date = run_date + timedelta(hours=24)
+                continue
 
             ndownload = edac.download_product_from_product_list(products, output_folder, False)
             if args.verbose:
