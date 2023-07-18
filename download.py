@@ -4,7 +4,7 @@ import shutil
 
 parser = argparse.ArgumentParser(description="Artic resampler")
 parser.add_argument("-m", "--mode", help="Mode",
-                    choices=["CHECKPY", "CHECK", "DOWNLOAD", "ARCDOWNLOAD", "BALDOWNLOAD", "AERONET_CHECK",
+                    choices=["CHECKPY", "CHECK", "DOWNLOAD", "ARCDOWNLOAD", "BALDOWNLOAD", "MEDDOWNLOAD","BLKDOWNLOAD","AERONET_CHECK",
                              "AERONET_DOWNLOAD"], required=True)
 parser.add_argument("-o", "--output", help="Ouput directory for downloads")
 parser.add_argument("-d", "--date", help="Date for a single date download")
@@ -133,6 +133,230 @@ def main():
                 if nfiles == 0:
                     time.sleep(10)
                 ntimes = ntimes + 1
+
+            ndownload = edac.download_product_from_product_list(products, output_folder, False)
+            if args.verbose:
+                print(f'[INFO] NDownload {ndownload} / {nfiles}')
+
+            if os.path.exists(edac.file_list_search) and ndownload < nfiles:
+                ntimes = 1
+                while ndownload < nfiles and ntimes <= 5:
+                    f1 = open(edac.file_list_search, 'r')
+                    ndownload = 0
+                    for line in f1:
+                        pname = line.strip()
+                        foutput = os.path.join(output_folder, f'{pname}.zip')
+                        if os.path.exists(foutput):
+                            ndownload = ndownload + 1
+                            if args.verbose:
+                                print(f'[INFO] Product {pname} already downloaded. Skipping...')
+                            continue
+                        b = edac.download_product_byname(pname, collection_id, output_folder, False)
+                        if b:
+                            ndownload = ndownload + 1
+                    f1.close()
+                    if args.verbose:
+                        print(f'[INFO] Attempt: {ntimes} NDownload {ndownload} / {nfiles}')
+                    if ndownload < nfiles:
+                        time.sleep(60)
+                    ntimes = ntimes + 1
+
+            run_date = run_date + timedelta(hours=24)
+
+
+    if args.mode == "MEDDOWNLOAD":
+        from eumdac_lois import EUMDAC_LOIS
+        from datetime import datetime as dt
+        from datetime import timedelta
+        import time
+
+        if not args.output:
+            print('Output directory is not defined')
+            return
+        if not args.start_date:
+            print('Start date is not defined')
+            return
+        start_date, end_date = get_dates_from_arg()
+        if start_date is None or end_date is None:
+            return
+        if end_date < start_date:
+            print(f'[ERROR] {end_date} must be greater or equal than {start_date}')
+            return
+
+        outputdir = args.output
+        if not os.path.exists(outputdir):
+            try:
+                os.mkdir(outputdir)
+            except:
+                print(f'[ERROR] {outputdir} does not exist and could not be created')
+                return
+
+
+        print(f'[INFO] Download start date: {start_date}')
+        print(f'[INFO] Download end date: {end_date}')
+        timeliness = 'NT'
+
+        if args.timeliness:
+            timeliness = args.timeliness
+            print(f'[INFO] Timeliness manually set to: {timeliness}')
+        else:
+            delta_t = dt.now().replace(hour=0, minute=0, second=0, microsecond=0) - end_date.replace(hour=0, minute=0,
+                                                                                                     second=0,
+                                                                                                     microsecond=0)
+            ndays = delta_t.days
+            if ndays < 8:
+                timeliness = 'NR'
+            print(f'[INFO] Days: {ndays} Timeliness automatically set to: {timeliness}')
+
+        if args.check_param:
+            return
+
+        run_date = start_date
+        while run_date <= end_date:
+            edac = EUMDAC_LOIS(args.verbose, args.credentials_user)
+            run_date_str = run_date.strftime('%Y-%m-%d')
+
+            if args.only_list:
+                output_folder = outputdir
+                file_list = os.path.join(output_folder,f'eum_filelist_med_{run_date_str}.txt')
+            else:
+                output_folder = os.path.join(outputdir, run_date.strftime('%Y%m%d'))
+                if not os.path.exists(output_folder):
+                    os.mkdir(output_folder)
+                file_list = os.path.join(output_folder, 'eum_filelist.txt')
+                if os.path.exists(file_list):
+                    file_list_nrt = os.path.join(output_folder, 'eum_filelist_nrt.txt')
+                    if os.path.exists(file_list_nrt):
+                        os.remove(file_list)
+                    else:
+                        os.rename(file_list, file_list_nrt)
+            edac.file_list_search = file_list
+
+            ntimes = 1
+            nfiles = 0
+
+            while nfiles == 0 and ntimes <= 5:
+                products, product_names, collection_id = edac.search_olci_by_bbox(run_date_str, 'FR', 'L2',
+                                                                                  [30.0, 46.0, -6.0, 36.5], -1, -1,
+                                                                                  timeliness)
+                nfiles = len(product_names)
+                if nfiles == 0:
+                    time.sleep(10)
+                ntimes = ntimes + 1
+
+            if args.only_list:
+                run_date = run_date + timedelta(hours=24)
+                continue
+
+            ndownload = edac.download_product_from_product_list(products, output_folder, False)
+            if args.verbose:
+                print(f'[INFO] NDownload {ndownload} / {nfiles}')
+
+            if os.path.exists(edac.file_list_search) and ndownload < nfiles:
+                ntimes = 1
+                while ndownload < nfiles and ntimes <= 5:
+                    f1 = open(edac.file_list_search, 'r')
+                    ndownload = 0
+                    for line in f1:
+                        pname = line.strip()
+                        foutput = os.path.join(output_folder, f'{pname}.zip')
+                        if os.path.exists(foutput):
+                            ndownload = ndownload + 1
+                            if args.verbose:
+                                print(f'[INFO] Product {pname} already downloaded. Skipping...')
+                            continue
+                        b = edac.download_product_byname(pname, collection_id, output_folder, False)
+                        if b:
+                            ndownload = ndownload + 1
+                    f1.close()
+                    if args.verbose:
+                        print(f'[INFO] Attempt: {ntimes} NDownload {ndownload} / {nfiles}')
+                    if ndownload < nfiles:
+                        time.sleep(60)
+                    ntimes = ntimes + 1
+
+            run_date = run_date + timedelta(hours=24)
+
+    if args.mode == "BLKDOWNLOAD":
+        from eumdac_lois import EUMDAC_LOIS
+        from datetime import datetime as dt
+        from datetime import timedelta
+        import time
+
+        if not args.output:
+            print('Output directory is not defined')
+            return
+        if not args.start_date:
+            print('Start date is not defined')
+            return
+        start_date, end_date = get_dates_from_arg()
+        if start_date is None or end_date is None:
+            return
+        outputdir = args.output
+        if not os.path.exists(outputdir):
+            try:
+                os.mkdir(outputdir)
+            except:
+                print(f'[ERROR] {outputdir} does not exist and could not be created')
+                return
+        if end_date < start_date:
+            print(f'[ERROR] {end_date} must be greater or equal than {start_date}')
+            return
+
+        print(f'[INFO] Download start date: {start_date}')
+        print(f'[INFO] Download end date: {end_date}')
+        timeliness = 'NT'
+
+        if args.timeliness:
+            timeliness = args.timeliness
+            print(f'[INFO] Timeliness manually set to: {timeliness}')
+        else:
+            delta_t = dt.now().replace(hour=0, minute=0, second=0, microsecond=0) - end_date.replace(hour=0, minute=0,
+                                                                                                     second=0,
+                                                                                                     microsecond=0)
+            ndays = delta_t.days
+            if ndays < 8:
+                timeliness = 'NR'
+            print(f'[INFO] Days: {ndays} Timeliness automatically set to: {timeliness}')
+
+        if args.check_param:
+            return
+
+        run_date = start_date
+        while run_date <= end_date:
+            edac = EUMDAC_LOIS(args.verbose, args.credentials_user)
+            run_date_str = run_date.strftime('%Y-%m-%d')
+            if args.only_list:
+                output_folder = outputdir
+                file_list = os.path.join(output_folder,f'eum_filelist_blk_{run_date_str}.txt')
+            else:
+                output_folder = os.path.join(outputdir, run_date.strftime('%Y%m%d'))
+                if not os.path.exists(output_folder):
+                    os.mkdir(output_folder)
+
+                file_list = os.path.join(output_folder, 'eum_filelist.txt')
+                if os.path.exists(file_list):
+                    file_list_nrt = os.path.join(output_folder, 'eum_filelist_nrt.txt')
+                    if os.path.exists(file_list_nrt):
+                        os.remove(file_list)
+                    else:
+                        os.rename(file_list, file_list_nrt)
+            edac.file_list_search = file_list
+
+            ntimes = 1
+            nfiles = 0
+            while nfiles == 0 and ntimes <= 5:
+                products, product_names, collection_id = edac.search_olci_by_bbox(run_date_str, 'FR', 'L2',
+                                                                                  [40.0, 48.0, 36.5, 42.0], -1, -1,
+                                                                                  timeliness)
+                nfiles = len(product_names)
+                if nfiles == 0:
+                    time.sleep(10)
+                ntimes = ntimes + 1
+
+            if args.only_list:
+                run_date = run_date + timedelta(hours=24)
+                continue
 
             ndownload = edac.download_product_from_product_list(products, output_folder, False)
             if args.verbose:
