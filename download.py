@@ -5,7 +5,7 @@ import shutil
 parser = argparse.ArgumentParser(description="CNR Downloaded")
 parser.add_argument("-m", "--mode", help="Mode",
                     choices=["CHECKPY", "CHECK", "DOWNLOAD", "ARCDOWNLOAD", "BALDOWNLOAD", "MEDDOWNLOAD", "BLKDOWNLOAD",
-                             "AERONET_CHECK","AERONET_DOWNLOAD","CSV_DOWNLOAD","REMOVE"], required=True)
+                             "AERONET_CHECK", "AERONET_DOWNLOAD", "CSV_DOWNLOAD", "REMOVE"], required=True)
 parser.add_argument("-o", "--output", help="Ouput directory for downloads")
 parser.add_argument("-d", "--date", help="Date for a single date download")
 parser.add_argument("-sd", "--start_date", help="Start date for multiple donwload")
@@ -19,7 +19,7 @@ parser.add_argument("-res", "--resolution", choices=["FR", "RR"], help="Resoluti
 parser.add_argument("-l", "--level", choices=["L1B", "L2"], help="Level. (L1B or L2). Default: L2")
 parser.add_argument("-c", "--config_file", help="Config file")
 parser.add_argument("-cu", "--credentials_user", help="Credentials user from credentials.ini to be used")
-parser.add_argument("-csv","--csv_file", help="CSV File")
+parser.add_argument("-csv", "--csv_file", help="CSV File")
 parser.add_argument("-v", "--verbose", help="Verbose mode.", action="store_true")
 parser.add_argument("-check", "--check_param", help="Check param mode.", action="store_true")
 parser.add_argument("-ol", "--only_list", help="Only list, no download.", action="store_true")
@@ -70,13 +70,12 @@ def main():
         pname = 'S3A_OL_2_WFR____20240421T040424_20240421T040724_20240421T060542_0179_111_261_1800_MAR_O_NR_003.SEN3'
         collection_id = edac.get_olci_collection('2024-04-21', 'FR', 'L2', False, False)
         print(collection_id)
-        edac.download_product_byname(pname,collection_id,'/mnt/c/DATA_LUIS/OCTACWORK/CHECK',True)
+        edac.download_product_byname(pname, collection_id, '/mnt/c/DATA_LUIS/OCTACWORK/CHECK', True)
 
         # edac.download_product_byname(pname,collection_id,outputdir,False)
         # edac.download_product_from_product_list(products, outputdir)
 
-
-    if args.move == "REMOVE":
+    if args.mode == "REMOVE":
         from datetime import datetime as dt
         from datetime import timedelta
         if not args.output:
@@ -120,14 +119,14 @@ def main():
             if os.path.exists(output_folder):
                 list_folders = []
                 for name in os.listdir(output_folder):
-                    file = os.path.join(output_folder,name)
+                    file = os.path.join(output_folder, name)
                     if os.path.isfile(file):
                         os.remove(file)
                     if os.path.isdir(file):
                         list_folders.append(file)
                         for fn in os.listdir(file):
-                            os.remove(os.path.join(file,fn))
-                if len(list_folders)>0:
+                            os.remove(os.path.join(file, fn))
+                if len(list_folders) > 0:
                     for folder in list_folders:
                         os.remove(folder)
 
@@ -180,7 +179,6 @@ def main():
 
         run_date = start_date
 
-
         while run_date <= end_date:
             edac = EUMDAC_LOIS(args.verbose, args.credentials_user)
             run_date_str = run_date.strftime('%Y-%m-%d')
@@ -188,7 +186,7 @@ def main():
             if args.only_list:
                 output_folder = outputdir
                 run_date_str_file = run_date.strftime('%Y%m%d')
-                if resolution=='RR':
+                if resolution == 'RR':
                     file_list = os.path.join(output_folder, f'eum_filelist_arc_rr_{run_date_str_file}.txt')
                 else:
                     file_list = os.path.join(output_folder, f'eum_filelist_arc_{run_date_str_file}.txt')
@@ -203,9 +201,6 @@ def main():
                         os.remove(file_list)
                     else:
                         os.rename(file_list, file_list_nrt)
-
-
-
 
             edac.file_list_search = file_list
 
@@ -307,7 +302,7 @@ def main():
             if args.only_list:
                 output_folder = outputdir
                 run_date_str_file = run_date.strftime('%Y%m%d')
-                if resolution=='RR':
+                if resolution == 'RR':
                     file_list = os.path.join(output_folder, f'eum_filelist_med_rr_{run_date_str_file}.txt')
                 else:
                     file_list = os.path.join(output_folder, f'eum_filelist_med_{run_date_str_file}.txt')
@@ -768,17 +763,17 @@ def main():
             return
         import pandas as pd
         from datetime import datetime as dt
-        dset = pd.read_csv(csv_file,sep=';')
+        dset = pd.read_csv(csv_file, sep=';')
         dates_limits = {}
-        for index,row in dset.iterrows():
+        for index, row in dset.iterrows():
             date_here_str = row['Date']
-            #date_here = dt.strptime(date_here_str,'%Y-%m-%d')
+            # date_here = dt.strptime(date_here_str,'%Y-%m-%d')
             time_here_str = row['Time']
             time_here_str = f'{date_here_str}T{time_here_str}'
             try:
-                time_here = dt.strptime(time_here_str,'%Y-%m-%dT%H:%M')
+                time_here = dt.strptime(time_here_str, '%Y-%m-%dT%H:%M')
             except:
-                time_here = dt.strptime(date_here_str,'%Y-%m-%d')
+                time_here = dt.strptime(date_here_str, '%Y-%m-%d')
             lat = float(row['Lat'])
             lon = float(row['Long'])
             if date_here_str not in dates_limits.keys():
@@ -792,7 +787,7 @@ def main():
             else:
 
                 dates_limits[date_here_str]['time_list'].append(time_here)
-                if lat<dates_limits[date_here_str]['lat_min']:
+                if lat < dates_limits[date_here_str]['lat_min']:
                     dates_limits[date_here_str]['lat_min'] = lat
                 if lat > dates_limits[date_here_str]['lat_max']:
                     dates_limits[date_here_str]['lat_max'] = lat
@@ -801,9 +796,10 @@ def main():
                 if lon > dates_limits[date_here_str]['lon_max']:
                     dates_limits[date_here_str]['lon_max'] = lon
 
-        for date_str  in dates_limits:
+        for date_str in dates_limits:
             nvalues = len(dates_limits[date_str]['time_list'])
-            print(date_str, nvalues,dates_limits[date_str]['lat_min'],dates_limits[date_str]['lat_max'],dates_limits[date_str]['lon_min'],dates_limits[date_str]['lon_max'])
+            print(date_str, nvalues, dates_limits[date_str]['lat_min'], dates_limits[date_str]['lat_max'],
+                  dates_limits[date_str]['lon_min'], dates_limits[date_str]['lon_max'])
 
 
 def get_fgranule(source_folder, datehere, granule_ref):
