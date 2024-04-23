@@ -299,7 +299,7 @@ class EUMDAC_LOIS:
 
         # DATE
         date, datestr = self.resolve_date_param(date)
-        print('--------> ',date,hourmin,hourmax)
+        #print('--------> ',date,hourmin,hourmax)
         datemin, datemax = self.get_date_min_max_from_date(date, hourmin, hourmax)
         if datemin is None or datemax is None:
             return products, list_products, collection_id
@@ -307,6 +307,8 @@ class EUMDAC_LOIS:
             print(f'[INFO] Search date min: {datemin} Search date max: {datemax}')
 
         products, list_products = self.search_olci_impl(collection_id, geo, datemin, datemax,timeliness)
+
+
 
         if self.verbose:
             print(f'[INFO] {len(products)} datasets found for the given area of interest')

@@ -2,10 +2,10 @@ import argparse
 import os.path
 import shutil
 
-parser = argparse.ArgumentParser(description="Artic resampler")
+parser = argparse.ArgumentParser(description="CNR Downloaded")
 parser.add_argument("-m", "--mode", help="Mode",
-                    choices=["CHECKPY", "CHECK", "DOWNLOAD", "ARCDOWNLOAD", "BALDOWNLOAD", "MEDDOWNLOAD","BLKDOWNLOAD","AERONET_CHECK",
-                             "AERONET_DOWNLOAD"], required=True)
+                    choices=["CHECKPY", "CHECK", "DOWNLOAD", "ARCDOWNLOAD", "BALDOWNLOAD", "MEDDOWNLOAD", "BLKDOWNLOAD",
+                             "AERONET_CHECK","AERONET_DOWNLOAD","CSV_DOWNLOAD","REMOVE"], required=True)
 parser.add_argument("-o", "--output", help="Ouput directory for downloads")
 parser.add_argument("-d", "--date", help="Date for a single date download")
 parser.add_argument("-sd", "--start_date", help="Start date for multiple donwload")
@@ -15,14 +15,16 @@ parser.add_argument("-ilong", "--insitu_long", help="In situ long")
 parser.add_argument("-aoc", "--aeronetoc_file", help="Aeronet OC NetCDF File")
 parser.add_argument("-exp", "--extracts_path", help="Extract path to check Aeronet Files")
 parser.add_argument("-t", "--timeliness", help="Timeliness", choices=["NR", "NT"])
-parser.add_argument("-r", "--resolution", choices=["FR", "RR"], help="Resolution. (FR or RR). Default: FR")
+parser.add_argument("-res", "--resolution", choices=["FR", "RR"], help="Resolution. (FR or RR). Default: FR")
 parser.add_argument("-l", "--level", choices=["L1B", "L2"], help="Level. (L1B or L2). Default: L2")
 parser.add_argument("-c", "--config_file", help="Config file")
 parser.add_argument("-cu", "--credentials_user", help="Credentials user from credentials.ini to be used")
+parser.add_argument("-csv","--csv_file", help="CSV File")
 parser.add_argument("-v", "--verbose", help="Verbose mode.", action="store_true")
 parser.add_argument("-check", "--check_param", help="Check param mode.", action="store_true")
 parser.add_argument("-ol", "--only_list", help="Only list, no download.", action="store_true")
 args = parser.parse_args()
+
 
 def only_test():
     if not args.check_param:
@@ -30,24 +32,30 @@ def only_test():
     from eumdac_lois import EUMDAC_LOIS
     edac = EUMDAC_LOIS(True, args.credentials_user)
     limits = [58, 59, 17, 18]
-    product, product_names, collection_id = edac.search_olci_by_bbox('2016-05-06', 'FR', 'L1B', limits, -1,-1, 'NT')
+    product, product_names, collection_id = edac.search_olci_by_bbox('2016-05-06', 'FR', 'L1B', limits, -1, -1, 'NT')
     print(product_names[0])
-    outputpath='/mnt/c/DATA_LUIS/OCTAC_WORK/ARC_TEST'
-    edac.download_product_byname(product_names[0],collection_id,outputpath,False)
+    outputpath = '/mnt/c/DATA_LUIS/OCTAC_WORK/ARC_TEST'
+    edac.download_product_byname(product_names[0], collection_id, outputpath, False)
 
     return True
+
+
 def main():
     print('STARTED')
 
-    if only_test():
-        return
+    # if only_test():
+    #     return
 
     if args.mode == "CHECKPY":
         checkpy()
         return
 
-    if not checkpy():
-        return
+    # if not checkpy():
+    #     return
+
+    resolution = 'FR'
+    if args.resolution:
+        resolution = args.resolution
 
     if args.mode == "CHECK":
         from eumdac_lois import EUMDAC_LOIS
@@ -55,12 +63,75 @@ def main():
         outputdir = '/mnt/c/DATA_LUIS/OCTAC_WORK/ARC_TEST'
         # products, product_names, collection_id = edac.search_olci_by_point('2023-01-19', 'FR', 'L2', 45.324091, 12.527398
         #                                                                , -1, -1)
-        edac.file_list_search = '/mnt/c/DATA_LUIS/OCTAC_WORK/ARC_TEST/file_list.txt'
-        product, product_names, collection_id = edac.search_olci_by_bbox('2022-07-15', 'FR', 'L2',
-                                                                         [65.0, 90.0, -180.0, 180.0], -1, -1)
+        # edac.file_list_search = '/mnt/c/DATA_LUIS/OCTAC_WORK/ARC_TEST/file_list.txt'
+        # product, product_names, collection_id = edac.search_olci_by_bbox('2022-07-15', 'FR', 'L2',
+        #                                                                  [65.0, 90.0, -180.0, 180.0], -1, -1)
         # pname = 'S3A_OL_2_WFR____20220715T232353_20220715T232653_20220717T115842_0179_087_301_1800_MAR_O_NT_003.SEN3'
+        pname = 'S3A_OL_2_WFR____20240421T040424_20240421T040724_20240421T060542_0179_111_261_1800_MAR_O_NR_003.SEN3'
+        collection_id = edac.get_olci_collection('2024-04-21', 'FR', 'L2', False, False)
+        print(collection_id)
+        edac.download_product_byname(pname,collection_id,'/mnt/c/DATA_LUIS/OCTACWORK/CHECK',True)
+
         # edac.download_product_byname(pname,collection_id,outputdir,False)
         # edac.download_product_from_product_list(products, outputdir)
+
+
+    if args.move == "REMOVE":
+        from datetime import datetime as dt
+        from datetime import timedelta
+        if not args.output:
+            print('Output directory is not defined')
+            return
+        if not args.start_date:
+            print('Start date is not defined')
+            return
+        start_date, end_date = get_dates_from_arg()
+        if start_date is None or end_date is None:
+            return
+        outputdir = args.output
+        if not os.path.exists(outputdir):
+            print(f'[ERROR] {outputdir} does not exist and could not be created')
+        if end_date < start_date:
+            print(f'[ERROR] {end_date} must be greater or equal than {start_date}')
+            return
+        print(f'[INFO] Remove start date: {start_date}')
+        print(f'[INFO] Remove end date: {end_date}')
+        timeliness = 'NT'
+
+        if args.timeliness:
+            timeliness = args.timeliness
+            print(f'[INFO] Timeliness manually set to: {timeliness}')
+        else:
+            delta_t = dt.now().replace(hour=0, minute=0, second=0, microsecond=0) - end_date.replace(hour=0, minute=0,
+                                                                                                     second=0,
+                                                                                                     microsecond=0)
+            ndays = delta_t.days
+            if ndays < 8:
+                timeliness = 'NR'
+            print(f'[INFO] Days: {ndays} Timeliness automatically set to: {timeliness}')
+
+        if args.check_param:
+            return
+
+        run_date = start_date
+
+        while run_date <= end_date:
+            output_folder = os.path.join(outputdir, run_date.strftime('%Y%m%d'))
+            if os.path.exists(output_folder):
+                list_folders = []
+                for name in os.listdir(output_folder):
+                    file = os.path.join(output_folder,name)
+                    if os.path.isfile(file):
+                        os.remove(file)
+                    if os.path.isdir(file):
+                        list_folders.append(file)
+                        for fn in os.listdir(file):
+                            os.remove(os.path.join(file,fn))
+                if len(list_folders)>0:
+                    for folder in list_folders:
+                        os.remove(folder)
+
+            run_date = run_date + timedelta(hours=24)
 
     if args.mode == "ARCDOWNLOAD":
         from eumdac_lois import EUMDAC_LOIS
@@ -108,31 +179,50 @@ def main():
             return
 
         run_date = start_date
+
+
         while run_date <= end_date:
             edac = EUMDAC_LOIS(args.verbose, args.credentials_user)
-            output_folder = os.path.join(outputdir, run_date.strftime('%Y%m%d'))
-            if not os.path.exists(output_folder):
-                os.mkdir(output_folder)
             run_date_str = run_date.strftime('%Y-%m-%d')
-            file_list = os.path.join(output_folder, 'eum_filelist.txt')
-            if os.path.exists(file_list):
-                file_list_nrt = os.path.join(output_folder, 'eum_filelist_nrt.txt')
-                if os.path.exists(file_list_nrt):
-                    os.remove(file_list)
+
+            if args.only_list:
+                output_folder = outputdir
+                run_date_str_file = run_date.strftime('%Y%m%d')
+                if resolution=='RR':
+                    file_list = os.path.join(output_folder, f'eum_filelist_arc_rr_{run_date_str_file}.txt')
                 else:
-                    os.rename(file_list, file_list_nrt)
+                    file_list = os.path.join(output_folder, f'eum_filelist_arc_{run_date_str_file}.txt')
+            else:
+                output_folder = os.path.join(outputdir, run_date.strftime('%Y%m%d'))
+                if not os.path.exists(output_folder):
+                    os.mkdir(output_folder)
+                file_list = os.path.join(output_folder, 'eum_filelist.txt')
+                if os.path.exists(file_list):
+                    file_list_nrt = os.path.join(output_folder, 'eum_filelist_nrt.txt')
+                    if os.path.exists(file_list_nrt):
+                        os.remove(file_list)
+                    else:
+                        os.rename(file_list, file_list_nrt)
+
+
+
+
             edac.file_list_search = file_list
 
             ntimes = 1
             nfiles = 0
             while nfiles == 0 and ntimes <= 5:
-                products, product_names, collection_id = edac.search_olci_by_bbox(run_date_str, 'FR', 'L2',
+                products, product_names, collection_id = edac.search_olci_by_bbox(run_date_str, resolution, 'L2',
                                                                                   [65.0, 90.0, -180.0, 180.0], -1, -1,
                                                                                   timeliness)
                 nfiles = len(product_names)
                 if nfiles == 0:
                     time.sleep(10)
                 ntimes = ntimes + 1
+
+            if args.only_list:
+                run_date = run_date + timedelta(hours=24)
+                continue
 
             ndownload = edac.download_product_from_product_list(products, output_folder, False)
             if args.verbose:
@@ -163,7 +253,6 @@ def main():
 
             run_date = run_date + timedelta(hours=24)
 
-
     if args.mode == "MEDDOWNLOAD":
         from eumdac_lois import EUMDAC_LOIS
         from datetime import datetime as dt
@@ -191,7 +280,6 @@ def main():
                 print(f'[ERROR] {outputdir} does not exist and could not be created')
                 return
 
-
         print(f'[INFO] Download start date: {start_date}')
         print(f'[INFO] Download end date: {end_date}')
         timeliness = 'NT'
@@ -218,7 +306,11 @@ def main():
 
             if args.only_list:
                 output_folder = outputdir
-                file_list = os.path.join(output_folder,f'eum_filelist_med_{run_date_str}.txt')
+                run_date_str_file = run_date.strftime('%Y%m%d')
+                if resolution=='RR':
+                    file_list = os.path.join(output_folder, f'eum_filelist_med_rr_{run_date_str_file}.txt')
+                else:
+                    file_list = os.path.join(output_folder, f'eum_filelist_med_{run_date_str_file}.txt')
             else:
                 output_folder = os.path.join(outputdir, run_date.strftime('%Y%m%d'))
                 if not os.path.exists(output_folder):
@@ -236,7 +328,7 @@ def main():
             nfiles = 0
 
             while nfiles == 0 and ntimes <= 5:
-                products, product_names, collection_id = edac.search_olci_by_bbox(run_date_str, 'FR', 'L2',
+                products, product_names, collection_id = edac.search_olci_by_bbox(run_date_str, resolution, 'L2',
                                                                                   [30.0, 46.0, -6.0, 36.5], -1, -1,
                                                                                   timeliness)
                 nfiles = len(product_names)
@@ -328,12 +420,15 @@ def main():
             run_date_str = run_date.strftime('%Y-%m-%d')
             if args.only_list:
                 output_folder = outputdir
-                file_list = os.path.join(output_folder,f'eum_filelist_blk_{run_date_str}.txt')
+                run_date_str_file = run_date.strftime('%Y%m%d')
+                if resolution == 'RR':
+                    file_list = os.path.join(output_folder, f'eum_filelist_blk_rr_{run_date_str_file}.txt')
+                else:
+                    file_list = os.path.join(output_folder, f'eum_filelist_blk_{run_date_str_file}.txt')
             else:
                 output_folder = os.path.join(outputdir, run_date.strftime('%Y%m%d'))
                 if not os.path.exists(output_folder):
                     os.mkdir(output_folder)
-
                 file_list = os.path.join(output_folder, 'eum_filelist.txt')
                 if os.path.exists(file_list):
                     file_list_nrt = os.path.join(output_folder, 'eum_filelist_nrt.txt')
@@ -346,7 +441,7 @@ def main():
             ntimes = 1
             nfiles = 0
             while nfiles == 0 and ntimes <= 5:
-                products, product_names, collection_id = edac.search_olci_by_bbox(run_date_str, 'FR', 'L2',
+                products, product_names, collection_id = edac.search_olci_by_bbox(run_date_str, resolution, 'L2',
                                                                                   [40.0, 48.0, 36.5, 42.0], -1, -1,
                                                                                   timeliness)
                 nfiles = len(product_names)
@@ -412,27 +507,45 @@ def main():
         run_date = start_date
         while run_date <= end_date:
             edac = EUMDAC_LOIS(args.verbose, args.credentials_user)
-            output_year = os.path.join(outputdir, run_date.strftime('%Y'))
-            output_folder = os.path.join(output_year, run_date.strftime('%j'))
-            if not os.path.exists(output_year):
-                os.mkdir(output_year)
-            #output_folder = os.path.join(outputdir, run_date.strftime('%Y%m%d'))
-            if not os.path.exists(output_folder):
-                os.mkdir(output_folder)
+            # output_year = os.path.join(outputdir, run_date.strftime('%Y'))
+            # output_folder = os.path.join(output_year, run_date.strftime('%j'))
+            # if not os.path.exists(output_year):
+            #     os.mkdir(output_year)
+            # output_folder = os.path.join(outputdir, run_date.strftime('%Y%m%d'))
+            # if not os.path.exists(output_folder):
+            #     os.mkdir(output_folder)
             run_date_str = run_date.strftime('%Y-%m-%d')
-            file_list = os.path.join(output_folder, 'eum_filelist.txt')
-            if os.path.exists(file_list):
-                file_list_nrt = os.path.join(output_folder, 'eum_filelist_nrt.txt')
-                if os.path.exists(file_list_nrt):
-                    os.remove(file_list)
+            if args.only_list:
+                output_folder = outputdir
+                run_date_str_file = run_date.strftime('%Y%m%d')
+                if resolution == 'RR':
+                    file_list = os.path.join(output_folder, f'eum_filelist_bal_rr_{run_date_str_file}.txt')
                 else:
-                    os.rename(file_list, file_list_nrt)
+                    file_list = os.path.join(output_folder, f'eum_filelist_bal_{run_date_str_file}.txt')
+            else:
+                output_folder = os.path.join(outputdir, run_date.strftime('%Y%m%d'))
+                if not os.path.exists(output_folder):
+                    os.mkdir(output_folder)
+                file_list = os.path.join(output_folder, 'eum_filelist.txt')
+                if os.path.exists(file_list):
+                    file_list_nrt = os.path.join(output_folder, 'eum_filelist_nrt.txt')
+                    if os.path.exists(file_list_nrt):
+                        os.remove(file_list)
+                    else:
+                        os.rename(file_list, file_list_nrt)
+            # file_list = os.path.join(output_folder, 'eum_filelist.txt')
+            # if os.path.exists(file_list):
+            #     file_list_nrt = os.path.join(output_folder, 'eum_filelist_nrt.txt')
+            #     if os.path.exists(file_list_nrt):
+            #         os.remove(file_list)
+            #     else:
+            #         os.rename(file_list, file_list_nrt)
             edac.file_list_search = file_list
 
             ntimes = 1
             nfiles = 0
             while nfiles == 0 and ntimes <= 5:
-                products, product_names, collection_id = edac.search_olci_by_bbox(run_date_str, 'FR', 'L1B',
+                products, product_names, collection_id = edac.search_olci_by_bbox(run_date_str, resolution, 'L1B',
                                                                                   [53.25, 65.85, 9.25, 30.25], 3, 18,
                                                                                   timeliness)
                 nfiles = len(product_names)
@@ -601,9 +714,9 @@ def main():
 
         resolution = 'FR'
         level = 'L2'
-        if options.has_option(section,'resolution'):
+        if options.has_option(section, 'resolution'):
             resolution = options[section]['resolution']
-        if options.has_option(section,'level'):
+        if options.has_option(section, 'level'):
             level = options[section]['level']
 
         ntodownload = 0
@@ -647,6 +760,51 @@ def main():
         f1.close()
         print(f'[INFO] Granules to be downloaded: {ntodownload}')
         print(f'[INFO] Granules downloaded: {ndownload}')
+
+    if args.mode == 'CSV_DOWNLOAD':
+        csv_file = args.csv_file
+        if not os.path.isfile(csv_file):
+            print(f'[ERROR] CSV file {csv_file} is not a valid file or does not exist')
+            return
+        import pandas as pd
+        from datetime import datetime as dt
+        dset = pd.read_csv(csv_file,sep=';')
+        dates_limits = {}
+        for index,row in dset.iterrows():
+            date_here_str = row['Date']
+            #date_here = dt.strptime(date_here_str,'%Y-%m-%d')
+            time_here_str = row['Time']
+            time_here_str = f'{date_here_str}T{time_here_str}'
+            try:
+                time_here = dt.strptime(time_here_str,'%Y-%m-%dT%H:%M')
+            except:
+                time_here = dt.strptime(date_here_str,'%Y-%m-%d')
+            lat = float(row['Lat'])
+            lon = float(row['Long'])
+            if date_here_str not in dates_limits.keys():
+                dates_limits[date_here_str] = {
+                    'time_list': [time_here],
+                    'lat_min': lat,
+                    'lat_max': lat,
+                    'lon_min': lon,
+                    'lon_max': lon
+                }
+            else:
+
+                dates_limits[date_here_str]['time_list'].append(time_here)
+                if lat<dates_limits[date_here_str]['lat_min']:
+                    dates_limits[date_here_str]['lat_min'] = lat
+                if lat > dates_limits[date_here_str]['lat_max']:
+                    dates_limits[date_here_str]['lat_max'] = lat
+                if lon < dates_limits[date_here_str]['lon_min']:
+                    dates_limits[date_here_str]['lon_min'] = lon
+                if lon > dates_limits[date_here_str]['lon_max']:
+                    dates_limits[date_here_str]['lon_max'] = lon
+
+        for date_str  in dates_limits:
+            nvalues = len(dates_limits[date_str]['time_list'])
+            print(date_str, nvalues,dates_limits[date_str]['lat_min'],dates_limits[date_str]['lat_max'],dates_limits[date_str]['lon_min'],dates_limits[date_str]['lon_max'])
+
 
 def get_fgranule(source_folder, datehere, granule_ref):
     yearstr = datehere.strftime('%Y')
