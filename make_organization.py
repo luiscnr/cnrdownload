@@ -107,24 +107,31 @@ def do_test_1():
         if os.path.exists(dir_date):
             print(f'[INFO] Work date: {work_date.strftime("%Y-%m-%d")}')
             str_date = work_date.strftime('%Y%j')
+
             file_rrs = os.path.join(dir_date,f'C{str_date}_rrs-arc-4km.nc')
+            if os.path.exists(file_rrs):
+                dataset_rrs = Dataset(file_rrs)
+                ts_rrs = float(dataset_rrs.variables['time'][0])
+                frrs.write('\n')
+                frrs.write(f'{work_date.strftime("%Y-%m-%d")};{ts_rrs}')
+                dataset_rrs.close()
+
             file_chl = os.path.join(dir_date,f'C{str_date}_chl-arc-4km.nc')
+            if os.path.exists(file_chl):
+                dataset_chl = Dataset(file_chl)
+                ts_chl = float(dataset_chl.variables['time'][0])
+                fchl.write('\n')
+                fchl.write(f'{work_date.strftime("%Y-%m-%d")};{ts_chl}')
+                dataset_chl.close()
+
             file_kd = os.path.join(dir_date,f'C{str_date}_kd490-arc-4km.nc')
-            dataset_rrs = Dataset(file_rrs)
-            dataset_chl = Dataset(file_chl)
-            dataset_kd = Dataset(file_kd)
-            ts_rrs = float(dataset_rrs.variables['time'][0])
-            ts_chl = float(dataset_chl.variables['time'][0])
-            ts_kd = float(dataset_kd.variables['time'][0])
-            frrs.write('\n')
-            frrs.write(f'{work_date.strftime("%Y-%m-%d")};{ts_rrs}')
-            fchl.write('\n')
-            fchl.write(f'{work_date.strftime("%Y-%m-%d")};{ts_chl}')
-            fkd.write('\n')
-            fkd.write(f'{work_date.strftime("%Y-%m-%d")};{ts_kd}')
-            dataset_rrs.close()
-            dataset_chl.close()
-            dataset_kd.close()
+            if os.path.exists(file_kd):
+                dataset_kd = Dataset(file_kd)
+                ts_kd = float(dataset_kd.variables['time'][0])
+                fkd.write('\n')
+                fkd.write(f'{work_date.strftime("%Y-%m-%d")};{ts_kd}')
+                dataset_kd.close()
+
         work_date = work_date + timedelta(hours=24)
     frrs.close()
     fchl.close()
