@@ -68,7 +68,7 @@ def main():
             input_path_date = os.path.join(input_path,work_date.strftime('%Y'),work_date.strftime('%d'))
             if os.path.exists(input_path_date):
                 for name in os.listdir(input_path_date):
-                    input_path_here = os.path.isfile(os.path.join(input_path_date, name))
+                    input_path_here = os.path.join(input_path_date, name)
                     index_nr = name.find('_NR_')
                     if index_nr>0:
                         if name.endswith('.zip') and os.path.isfile(input_path_here):
