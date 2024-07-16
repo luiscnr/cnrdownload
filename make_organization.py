@@ -4,7 +4,7 @@ from datetime import datetime as dt
 from datetime import timedelta
 
 parser = argparse.ArgumentParser(description="CNR Downloaded")
-parser.add_argument("-m", "--mode", help="Mode", choices=["REMOVE_NR"], required=True)
+parser.add_argument("-m", "--mode", help="Mode", choices=["REMOVE_NR","MOVE"], required=True)
 parser.add_argument("-i", "--input", help="Input file/directory")
 parser.add_argument("-o", "--output", help="Ouput file/directory")
 # parser.add_argument("-d", "--date", help="Date for a single date download")
@@ -51,6 +51,22 @@ def get_dates_from_arg():
 
     return start_date, end_date
 
+def get_output_path_date(output_path,date):
+    path_year = createIfNotExist(os.path.join(output_path,date.strftime('%Y')))
+    path_jday = createIfNotExist(os.path.join(path_year,date.strftime('%j'))) if path_year is not None else None
+    return path_jday
+
+
+def createIfNotExist(folder):
+    if not os.path.exists(folder):
+        try:
+            os.mkdir(folder)
+        except:
+            return None
+
+    return folder
+
+
 
 def main():
     print('[INFO] Started organization')
@@ -79,6 +95,29 @@ def main():
                             os.rmdir(input_path_here)
             work_date = work_date + timedelta(hours=24)
 
+    if args.mode == 'MOVE':
+        if start_date is None or end_date is None: return
+        input_path = args.input
+        if not os.path.isdir(input_path):
+            print(f'[ERROR] Input path {input_path} is not a valid directory')
+            return
+        output_path = args.output
+        if not os.path.isdir(output_path):
+            print(f'[ERROR] Output path {output_path} is not a valid directory')
+            return
 
+        work_date = start_date
+        while work_date <= end_date:
+            input_path_date = os.path.join(input_path, work_date.strftime('%Y'), work_date.strftime('%j'))
+
+            if os.path.exists(input_path_date):
+                print(f'[INFO] Input path date: {input_path_date} ')
+                output_path_date = get_output_path_date(output_path, work_date)
+                if os.path.exists(output_path_date):
+                    for name in os.listdir(input_path_date):
+                        input_path_here = os.path.join(input_path_date, name)
+                        output_path_here = os.path.join(output_path_date,name)
+                        print(f'[INFO] {input_path_here}-->{output_path_here}')
+                        #os.rename(input_path_here,output_path_here)
 if __name__ == '__main__':
     main()
