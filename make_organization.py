@@ -91,17 +91,17 @@ def do_test_1():
     from netCDF4 import Dataset
     work_date = dt(1997,9,1)
     end_date = dt(2023,12,31)
-    dir_base = '/store/COP2-OC-TAC/arc/multi'
-    file_out_rrs = os.path.join(dir_base,'DatesRRS.csv')
-    file_out_chl = os.path.join(dir_base, 'DatesCHL.csv')
-    file_out_kd = os.path.join(dir_base, 'DatesKD.csv')
+    dir_base = '/store/COP2-OC-TAC/arc/multi_temp'
+    file_out_rrs = os.path.join(dir_base,'DatesRRS_New.csv')
+    # file_out_chl = os.path.join(dir_base, 'DatesCHL.csv')
+    # file_out_kd = os.path.join(dir_base, 'DatesKD.csv')
     frrs = open(file_out_rrs,'w')
-    fchl = open(file_out_chl, 'w')
-    fkd = open(file_out_kd, 'w')
+    # fchl = open(file_out_chl, 'w')
+    # fkd = open(file_out_kd, 'w')
     first_line = 'Date;TimeStamp'
     frrs.write(first_line)
-    fchl.write(first_line)
-    fkd.write(first_line)
+    # fchl.write(first_line)
+    # fkd.write(first_line)
     while work_date<=end_date:
         dir_date = os.path.join(dir_base,work_date.strftime('%Y'),work_date.strftime('%j'))
         if os.path.exists(dir_date):
@@ -116,33 +116,56 @@ def do_test_1():
                 frrs.write(f'{work_date.strftime("%Y-%m-%d")};{ts_rrs}')
                 dataset_rrs.close()
 
-            file_chl = os.path.join(dir_date,f'C{str_date}_chl-arc-4km.nc')
-            if os.path.exists(file_chl):
-                dataset_chl = Dataset(file_chl)
-                ts_chl = float(dataset_chl.variables['time'][0])
-                fchl.write('\n')
-                fchl.write(f'{work_date.strftime("%Y-%m-%d")};{ts_chl}')
-                dataset_chl.close()
-
-            file_kd = os.path.join(dir_date,f'C{str_date}_kd490-arc-4km.nc')
-            if os.path.exists(file_kd):
-                dataset_kd = Dataset(file_kd)
-                ts_kd = float(dataset_kd.variables['time'][0])
-                fkd.write('\n')
-                fkd.write(f'{work_date.strftime("%Y-%m-%d")};{ts_kd}')
-                dataset_kd.close()
+            # file_chl = os.path.join(dir_date,f'C{str_date}_chl-arc-4km.nc')
+            # if os.path.exists(file_chl):
+            #     dataset_chl = Dataset(file_chl)
+            #     ts_chl = float(dataset_chl.variables['time'][0])
+            #     fchl.write('\n')
+            #     fchl.write(f'{work_date.strftime("%Y-%m-%d")};{ts_chl}')
+            #     dataset_chl.close()
+            #
+            # file_kd = os.path.join(dir_date,f'C{str_date}_kd490-arc-4km.nc')
+            # if os.path.exists(file_kd):
+            #     dataset_kd = Dataset(file_kd)
+            #     ts_kd = float(dataset_kd.variables['time'][0])
+            #     fkd.write('\n')
+            #     fkd.write(f'{work_date.strftime("%Y-%m-%d")};{ts_kd}')
+            #     dataset_kd.close()
 
         work_date = work_date + timedelta(hours=24)
     frrs.close()
-    fchl.close()
-    fkd.close()
+    # fchl.close()
+    # fkd.close()
+
+def do_test_2():
+    file_dates = '/mnt/c/DATA_LUIS/OCTACWORK/DatesRRS.csv'
+    file_out = '/mnt/c/DATA_LUIS/OCTACWORK/DatesRRS_OUT.csv'
+    import pandas as pd
+    import numpy as np
+    df = pd.read_csv(file_dates,sep=';')
+    timestamp = np.array(df['TimeStamp'])
+    dates_1970 = []
+    dates_1981 = []
+    ref_1981 = dt(1981,1,1,0,0,0)
+    for t in timestamp:
+        dates_1981.append((ref_1981+timedelta(seconds=t)).strftime('%Y-%m-%d'))
+        dates_1970.append(dt.utcfromtimestamp(t).strftime('%Y-%m-%d'))
+
+    df['dates_1970'] = dates_1970
+    df['dates_1981'] = dates_1981
+    df.to_csv(file_out,sep=';')
+
+
+
 
 def launch_test():
     do_test_1()
+    #do_test_2()
 def main():
     print('[INFO] Started organization')
     if args.mode == 'TEST':
         launch_test()
+        return
     start_date, end_date = get_dates_from_arg()
 
 
