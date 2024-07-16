@@ -7,6 +7,7 @@ parser = argparse.ArgumentParser(description="CNR Downloaded")
 parser.add_argument("-m", "--mode", help="Mode", choices=["REMOVE_NR","MOVE"], required=True)
 parser.add_argument("-i", "--input", help="Input file/directory")
 parser.add_argument("-o", "--output", help="Ouput file/directory")
+parser.add_argument("-script","--script_file",help="Prepare script file")
 # parser.add_argument("-d", "--date", help="Date for a single date download")
 parser.add_argument("-sd", "--start_date", help="Start date.")
 parser.add_argument("-ed", "--end_date", help="End date.")
@@ -56,7 +57,6 @@ def get_output_path_date(output_path,date):
     path_jday = createIfNotExist(os.path.join(path_year,date.strftime('%j'))) if path_year is not None else None
     return path_jday
 
-
 def createIfNotExist(folder):
     if not os.path.exists(folder):
         try:
@@ -67,6 +67,24 @@ def createIfNotExist(folder):
     return folder
 
 
+def start_script_file(script_file):
+    fw = open(script_file,'w')
+    fw.write('!/bin/bash')
+    fw.write('\n')
+    fw.write('#SBATCH --nodes=1')
+    fw.write('\n')
+    fw.write('#SBATCH --ntasks=1')
+    fw.write('\n')
+    fw.write('#SBATCH -p octac_rep')
+    fw.write('\n')
+    fw.write('#SBATCH --mail-type=BEGIN,END,FAIL')
+    fw.write('\n')
+    fw.write('#SBATCH --mail-user=luis.gonzalezvilas@artov.ismar.cnr.it')
+    fw.write('\n')
+    fw.write('\n')
+    fw.write('\n')
+
+    return fw
 
 def main():
     print('[INFO] Started organization')
@@ -107,6 +125,9 @@ def main():
             return
 
         work_date = start_date
+        fw = None
+        if args.script_file:
+            fw = start_script_file(args.script_file)
         while work_date <= end_date:
             input_path_date = os.path.join(input_path, work_date.strftime('%Y'), work_date.strftime('%j'))
 
@@ -118,7 +139,16 @@ def main():
                         input_path_here = os.path.join(input_path_date, name)
                         output_path_here = os.path.join(output_path_date,name)
                         print(f'[INFO] {input_path_here}-->{output_path_here}')
-                        #os.rename(input_path_here,output_path_here)
+                        if fw is not None:
+                            fw.write('\n')
+                            fw.write(f'mv {input_path_here} {output_path_here}')
+                        else:
+                            os.rename(input_path_here,output_path_here)
+
+
             work_date = work_date + timedelta(hours=24)
+
+        if fw is not None:
+            fw.close()
 if __name__ == '__main__':
     main()
