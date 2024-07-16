@@ -107,9 +107,9 @@ def do_test_1():
         if os.path.exists(dir_date):
             print(f'[INFO] Work date: {work_date.strftime("%Y-%m-%d")}')
             str_date = work_date.strftime('%Y%j')
-            file_rrs = f'C{str_date}_rrs-arc-4km.nc'
-            file_chl = f'C{str_date}_chl-arc-4km.nc'
-            file_kd = f'C{str_date}_kd490-arc-4km.nc'
+            file_rrs = os.path.join(dir_date,f'C{str_date}_rrs-arc-4km.nc')
+            file_chl = os.path.join(f'C{str_date}_chl-arc-4km.nc')
+            file_kd = os.path.join(f'C{str_date}_kd490-arc-4km.nc')
             dataset_rrs = Dataset(file_rrs)
             dataset_chl = Dataset(file_chl)
             dataset_kd = Dataset(file_kd)
