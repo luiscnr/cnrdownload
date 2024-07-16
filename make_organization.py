@@ -91,7 +91,7 @@ def do_test_1():
     from netCDF4 import Dataset
     work_date = dt(1997,9,1)
     end_date = dt(2023,12,31)
-    dir_base = '/store/COP2-OC-TAC/arc/multi_temp'
+    dir_base = '/store/COP2-OC-TAC/arc/multi'
     file_out_rrs = os.path.join(dir_base,'DatesRRS_New.csv')
     # file_out_chl = os.path.join(dir_base, 'DatesCHL.csv')
     # file_out_kd = os.path.join(dir_base, 'DatesKD.csv')
@@ -138,8 +138,8 @@ def do_test_1():
     # fkd.close()
 
 def do_test_2():
-    file_dates = '/mnt/c/DATA_LUIS/OCTACWORK/DatesRRS.csv'
-    file_out = '/mnt/c/DATA_LUIS/OCTACWORK/DatesRRS_OUT.csv'
+    file_dates = '/mnt/c/DATA_LUIS/OCTACWORK/DatesRRS_New.csv'
+    file_out = '/mnt/c/DATA_LUIS/OCTACWORK/DatesRRS_New_OUT.csv'
     import pandas as pd
     import numpy as np
     df = pd.read_csv(file_dates,sep=';')
@@ -160,7 +160,7 @@ def do_test_2():
 
 def launch_test():
     do_test_1()
-    #do_test_2()
+    # do_test_2()
 def main():
     print('[INFO] Started organization')
     if args.mode == 'TEST':
