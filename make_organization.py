@@ -4,7 +4,7 @@ from datetime import datetime as dt
 from datetime import timedelta
 
 parser = argparse.ArgumentParser(description="CNR Downloaded")
-parser.add_argument("-m", "--mode", help="Mode", choices=["REMOVE_NR","MOVE"], required=True)
+parser.add_argument("-m", "--mode", help="Mode", choices=["REMOVE_NR","MOVE","TEST"], required=True)
 parser.add_argument("-i", "--input", help="Input file/directory")
 parser.add_argument("-o", "--output", help="Ouput file/directory")
 parser.add_argument("-script","--script_file",help="Prepare script file")
@@ -69,7 +69,7 @@ def createIfNotExist(folder):
 
 def start_script_file(script_file):
     fw = open(script_file,'w')
-    fw.write('!/bin/bash')
+    fw.write('#!/bin/bash')
     fw.write('\n')
     fw.write('#SBATCH --nodes=1')
     fw.write('\n')
@@ -86,9 +86,59 @@ def start_script_file(script_file):
 
     return fw
 
+
+def do_test_1():
+    from netCDF4 import Dataset
+    work_date = dt(1997,9,1)
+    end_date = dt(2023,12,31)
+    dir_base = '/store/COP2-OC-TAC/arc/multi'
+    file_out_rrs = os.path.join(dir_base,'DatesRRS.csv')
+    file_out_chl = os.path.join(dir_base, 'DatesCHL.csv')
+    file_out_kd = os.path.join(dir_base, 'DatesKD.csv')
+    frrs = open(file_out_rrs,'w')
+    fchl = open(file_out_chl, 'w')
+    fkd = open(file_out_kd, 'w')
+    first_line = 'Date;TimeStamp'
+    frrs.write(first_line)
+    fchl.write(first_line)
+    fkd.write(first_line)
+    while work_date<=end_date:
+        dir_date = os.path.join(dir_base,work_date.strftime('%Y'),work_date.strftime('%j'))
+        if os.path.exists(dir_date):
+            print(f'[INFO] Work date: {work_date.strftime("%Y-%m-%d")}')
+            str_date = work_date.strftime('%Y%j')
+            file_rrs = f'C{str_date}_rrs-arc-4km.nc'
+            file_chl = f'C{str_date}_chl-arc-4km.nc'
+            file_kd = f'C{str_date}_kd490-arc-4km.nc'
+            dataset_rrs = Dataset(file_rrs)
+            dataset_chl = Dataset(file_chl)
+            dataset_kd = Dataset(file_kd)
+            ts_rrs = float(dataset_rrs.variables['time'][0])
+            ts_chl = float(dataset_chl.variables['time'][0])
+            ts_kd = float(dataset_kd.variables['time'][0])
+            frrs.write('\n')
+            frrs.write(f'{work_date.strftime("%Y-%m-%d")};{ts_rrs}')
+            fchl.write('\n')
+            fchl.write(f'{work_date.strftime("%Y-%m-%d")};{ts_chl}')
+            fkd.write('\n')
+            fkd.write(f'{work_date.strftime("%Y-%m-%d")};{ts_kd}')
+            dataset_rrs.close()
+            dataset_chl.close()
+            dataset_kd.close()
+        work_date = work_date + timedelta(hours=24)
+    frrs.close()
+    fchl.close()
+    fkd.close()
+
+def launch_test():
+    do_test_1()
 def main():
     print('[INFO] Started organization')
+    if args.mode == 'TEST':
+        launch_test()
     start_date, end_date = get_dates_from_arg()
+
+
 
     if args.mode == 'REMOVE_NR':
         if start_date is None or end_date is None: return
