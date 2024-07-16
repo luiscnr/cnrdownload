@@ -119,5 +119,6 @@ def main():
                         output_path_here = os.path.join(output_path_date,name)
                         print(f'[INFO] {input_path_here}-->{output_path_here}')
                         #os.rename(input_path_here,output_path_here)
+            work_date = work_date + timedelta(hours=24)
 if __name__ == '__main__':
     main()
