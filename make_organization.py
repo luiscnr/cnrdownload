@@ -4,7 +4,7 @@ from datetime import datetime as dt
 from datetime import timedelta
 
 parser = argparse.ArgumentParser(description="CNR Downloaded")
-parser.add_argument("-m", "--mode", help="Mode", choices=["REMOVE_NR","MOVE","TEST"], required=True)
+parser.add_argument("-m", "--mode", help="Mode", choices=["REMOVE_NR","MOVE","TEST","CHECK_S3"], required=True)
 parser.add_argument("-i", "--input", help="Input file/directory")
 parser.add_argument("-o", "--output", help="Ouput file/directory")
 parser.add_argument("-script","--script_file",help="Prepare script file")
@@ -159,8 +159,8 @@ def do_test_2():
 
 
 def launch_test():
-    do_test_1()
-    # do_test_2()
+    # do_test_1()
+    do_test_2()
 def main():
     print('[INFO] Started organization')
     if args.mode == 'TEST':
@@ -230,5 +230,113 @@ def main():
 
         if fw is not None:
             fw.close()
+
+    if args.mode == 'CHECK_S3':
+        if start_date is None or end_date is None: return
+        input_path = args.input
+        if not os.path.isdir(input_path):
+            print(f'[ERROR] Input path {input_path} is not a valid directory')
+            return
+
+        file_list_dates = os.path.join(input_path,'DateList.csv')
+        file_list_todownload = os.path.join(input_path,'GranulesToDownload.txt')
+        fdownload = open(file_list_todownload,'w')
+        file_list_nrtodelete = os.path.join(input_path,'FilesNRToDelete.slurm')
+        fnr = open(file_list_nrtodelete,'w')
+        fnr = start_slurm(fnr)
+        fwl = open(file_list_dates,'w')
+        fwl.write('Date;NGranules;NFilesAvailable;NFilesMissing;NFilesNR')
+        work_date = start_date
+        while work_date <= end_date:
+            eum_file_list = os.path.join(input_path,f'eum_filelist_bal_{work_date.strftime("%Y%m%d")}.txt')
+            input_path_date = os.path.join(input_path, work_date.strftime('%Y'), work_date.strftime('%j'))
+            granule_list = get_granule_list(eum_file_list)
+            ngranules = len(granule_list)
+            nfilesnr = 0
+            nfilesavailable = 0
+            nfilesmissing = 0
+            if ngranules==0 or not os.path.isdir(input_path_date):
+                fwl = add_line(fwl,f'{work_date.strftime("%Y-%m-%d")};{ngranules};{nfilesavailable};{nfilesmissing};{nfilesnr}')
+                work_date = work_date + timedelta(hours=24)
+                continue
+
+            input_file_list  ={}
+            for name in os.listdir(input_path_date):
+                if not name.startswith('S3') or not name.endswith('.nc'): continue
+                if name.find('_NR_')>0:
+                    fnr = add_line(fnr,f'rm {os.path.join(input_path_date,name)}')
+                    nfilesnr = nfilesnr + 1
+                elif name.find('_NT_')>0:
+                    start,stop = get_start_end_date_from_file_name(name)
+                    input_file_list[os.path.join(input_path_date)]={
+                        'start':start,
+                        'stop':stop
+                    }
+
+            ninput = len(input_file_list)
+            if ninput == 0:
+                nfilesmissing = ngranules
+                for g in granule_list:
+                    fdownload = add_line(fdownload,f'{work_date.strfime("%Y-%m-%d")};{g}')
+                fwl = add_line(fwl,
+                               f'{work_date.strftime("%Y-%m-%d")};{ngranules};{nfilesavailable};{nfilesmissing};{nfilesnr}')
+                work_date = work_date + timedelta(hours=24)
+                continue
+
+            for g in granule_list:
+                available = False
+                for f in input_file_list:
+                    if input_file_list[f]['start']>=granule_list[g]['start'] and input_file_list[f]['stop']<=granule_list[g]['stop']:
+                        available = True
+                        break
+                if available:
+                    nfilesavailable = nfilesavailable + 1
+                else:
+                    nfilesmissing = nfilesmissing + 1
+                    fdownload = add_line(fdownload, f'{work_date.strfime("%Y-%m-%d")};{g}')
+
+            fwl = add_line(fwl,
+                           f'{work_date.strftime("%Y-%m-%d")};{ngranules};{nfilesavailable};{nfilesmissing};{nfilesnr}')
+
+
+            work_date = work_date + timedelta(hours=24)
+
+        fdownload.close()
+        fnr.close()
+        fwl.close()
+
+def get_granule_list(file_list):
+    fr = open(file_list,'r')
+    granules = {}
+    for line in fr:
+        if len(line.strip())>0:
+            start_date,end_date = get_start_end_date_from_file_name(line.strip())
+            granules[line.strip()]={
+                'start':start_date,
+                'stop':end_date
+            }
+    fr.close()
+    return granules
+def get_start_end_date_from_file_name(file_name):
+    name = os.path.basename(file_name)
+    name_l  = name.strip('_')
+    start_date = dt.strptime(name_l[7],'%Y%m%dT%H%M%S').timestamp()
+    end_date = dt.strptime(name_l[8],'%Y%m%dT%H%M%S').timestamp()
+    return start_date,end_date
+def add_line(fw,line):
+    fw.write('\n')
+    fw.write(line)
+    return fw
+
+def start_slurm(fw):
+    fw.write('#!/bin/bash')
+    fw = add_line(fw, '#SBATCH --nodes=1')
+    fw = add_line(fw, '#SBATCH --ntasks=1')
+    fw = add_line(fw, '#SBATCH -p=octac_rep')
+    fw = add_line(fw, '#SBATCH --mail-type=BEGIN,END,FAIL')
+    fw = add_line(fw, '#SBATCH --mail-user=luis.gonzalezvilas@artov.ismar.cnr.it')
+    fw = add_line('')
+    return fw
+
 if __name__ == '__main__':
     main()
