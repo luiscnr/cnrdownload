@@ -286,7 +286,7 @@ def main():
             for g in granule_list:
                 available = False
                 for f in input_file_list:
-                    if input_file_list[f]['start']>=granule_list[g]['start'] and input_file_list[f]['stop']<=granule_list[g]['stop']:
+                    if input_file_list[f]['start']>=granule_list[g]['start'] and input_file_list[f]['start']<=granule_list[g]['stop']:
                         available = True
                         break
                 if available:
