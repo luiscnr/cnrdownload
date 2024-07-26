@@ -268,7 +268,7 @@ def main():
                     nfilesnr = nfilesnr + 1
                 elif name.find('_NT_')>0:
                     start,stop = get_start_end_date_from_file_name(name)
-                    input_file_list[os.path.join(input_path_date)]={
+                    input_file_list[os.path.join(input_path_date,name)]={
                         'start':start,
                         'stop':stop
                     }
@@ -283,13 +283,17 @@ def main():
                 work_date = work_date + timedelta(hours=24)
                 continue
 
+
+
             for g in granule_list:
+
                 available = False
                 for f in input_file_list:
-                    if input_file_list[f]['start']>=granule_list[g]['start'] and input_file_list[f]['start']<=granule_list[g]['stop']:
+
+                    if granule_list[g]['start'] <= input_file_list[f]['start'] <= granule_list[g]['stop']:
                         available = True
                         break
-                    if input_file_list[f]['stop']>=granule_list[g]['start'] and input_file_list[f]['stop']<=granule_list[g]['stop']:
+                    if granule_list[g]['start'] <= input_file_list[f]['stop'] <= granule_list[g]['stop']:
                         available = True
                         break
                 if available:
