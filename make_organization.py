@@ -293,7 +293,7 @@ def main():
                     nfilesavailable = nfilesavailable + 1
                 else:
                     nfilesmissing = nfilesmissing + 1
-                    fdownload = add_line(fdownload, f'{work_date.strfime("%Y-%m-%d")};{g}')
+                    fdownload = add_line(fdownload, f'{work_date.strftime("%Y-%m-%d")};{g}')
 
             fwl = add_line(fwl,
                            f'{work_date.strftime("%Y-%m-%d")};{ngranules};{nfilesavailable};{nfilesmissing};{nfilesnr}')
