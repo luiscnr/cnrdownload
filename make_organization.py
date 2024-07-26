@@ -289,6 +289,9 @@ def main():
                     if input_file_list[f]['start']>=granule_list[g]['start'] and input_file_list[f]['start']<=granule_list[g]['stop']:
                         available = True
                         break
+                    if input_file_list[f]['stop']>=granule_list[g]['start'] and input_file_list[f]['stop']<=granule_list[g]['stop']:
+                        available = True
+                        break
                 if available:
                     nfilesavailable = nfilesavailable + 1
                 else:
