@@ -52,7 +52,7 @@ class EUMDAC_LOIS:
                 'title': 'OLCI Level 1B Full Resolution - Sentinel-3',
                 'resolution': 'FR',
                 'level': 'L1B',
-                'start_date': '2021-01-01',
+                'start_date': '2016-01-01',
                 'end_date': 'TODAY',
             },
             'EO:EUM:DAT:0577': {
