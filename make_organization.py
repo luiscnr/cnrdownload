@@ -317,9 +317,12 @@ def get_granule_list(file_list):
             }
     fr.close()
     return granules
+
 def get_start_end_date_from_file_name(file_name):
     name = os.path.basename(file_name)
     name_l  = name.strip('_')
+    print(name)
+    print(name_l)
     start_date = dt.strptime(name_l[7],'%Y%m%dT%H%M%S').timestamp()
     end_date = dt.strptime(name_l[8],'%Y%m%dT%H%M%S').timestamp()
     return start_date,end_date
