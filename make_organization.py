@@ -335,7 +335,7 @@ def start_slurm(fw):
     fw = add_line(fw, '#SBATCH -p=octac_rep')
     fw = add_line(fw, '#SBATCH --mail-type=BEGIN,END,FAIL')
     fw = add_line(fw, '#SBATCH --mail-user=luis.gonzalezvilas@artov.ismar.cnr.it')
-    fw = add_line('')
+    fw = add_line(fw,'')
     return fw
 
 if __name__ == '__main__':
