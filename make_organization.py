@@ -280,7 +280,7 @@ def main():
             if ninput == 0:
                 nfilesmissing = ngranules
                 for g in granule_list:
-                    fdownload = add_line(fdownload,f'{work_date.strfime("%Y-%m-%d")};{g}')
+                    fdownload = add_line(fdownload,f'{work_date.strftime("%Y-%m-%d")};{g}')
                 fwl = add_line(fwl,
                                f'{work_date.strftime("%Y-%m-%d")};{ngranules};{nfilesavailable};{nfilesmissing};{nfilesnr}')
                 work_date = work_date + timedelta(hours=24)

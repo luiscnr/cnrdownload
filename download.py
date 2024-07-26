@@ -4,7 +4,7 @@ import shutil
 
 parser = argparse.ArgumentParser(description="CNR Downloaded")
 parser.add_argument("-m", "--mode", help="Mode",
-                    choices=["CHECKPY", "CHECK", "DOWNLOAD", "ARCDOWNLOAD", "BALDOWNLOAD", "MEDDOWNLOAD", "BLKDOWNLOAD",
+                    choices=["CHECKPY", "CHECK", "LISTDOWNLOAD", "ARCDOWNLOAD", "BALDOWNLOAD", "MEDDOWNLOAD", "BLKDOWNLOAD",
                              "AERONET_CHECK", "AERONET_DOWNLOAD", "CSV_DOWNLOAD", "REMOVE"], required=True)
 parser.add_argument("-o", "--output", help="Ouput directory for downloads")
 parser.add_argument("-d", "--date", help="Date for a single date download")
@@ -74,6 +74,42 @@ def main():
 
         # edac.download_product_byname(pname,collection_id,outputdir,False)
         # edac.download_product_from_product_list(products, outputdir)
+
+    if args.mode == "LISTDOWNLOAD": #two columns, date(as YYYY-mm-dd) and granule
+        if not args.csv_file:
+            print('[ERROR] CSV fiie is not defined')
+            return
+        if not args.output:
+            print('[ERROR]Output directory is not defined')
+            return
+        file_csv = args.csv_file
+        outputdir = args.output
+        if not os.path.exists(file_csv):
+            print(f'[ERROR] CSV file {file_csv} does not exist')
+            return
+        if not os.path.exists(outputdir):
+            try:
+                os.mkdir(outputdir)
+            except:
+                print(f'[ERROR] Output dir {outputdir} does not exist and could not be created. Review permissions')
+
+        import pandas as pd
+        df = pd.read_csv(file_csv)
+        if len(df.columns)==2:
+            date_array = df[:,0]
+            granule_array = df[:,1]
+            date_ref = 'YYYY-mm-dd'
+            granules_donwload = {}
+            for date,granule in zip(date_array,granule_array):
+                if date!=date_ref:
+                    date_ref = date
+                    granules_donwload[date] = [granule]
+                else:
+                    granules_donwload[date].append(granule)
+
+            for date_h in granules_donwload:
+                print(date_h,'-->',granules_donwload[date_h])
+
 
     if args.mode == "REMOVE":
         from datetime import datetime as dt
