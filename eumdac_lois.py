@@ -291,7 +291,12 @@ class EUMDAC_LOIS:
             print(f'[INFO] Collection ID: {collection_id}')
 
         # GEOGRAPHIC AREA
-        geo = self.get_geo_from_bbox(boundingbox)
+        if len(boundingbox)==2:
+            lat_points = boundingbox[0]
+            lon_points = boundingbox[1]
+            geo = self.get_geo_from_polygon(lat_points,lon_points)
+        elif len(boundingbox)==4:
+            geo = self.get_geo_from_bbox(boundingbox)
         if geo is None:
             return products, list_products, collection_id
         if self.verbose:
@@ -373,6 +378,14 @@ class EUMDAC_LOIS:
         return os.path.exists(foutput)
 
 
+    def download_product_from_product_list_names(self, products, collection, outputdir, overwrite):
+        ndownloaded = 0
+        for product in products:
+            b = self.download_product_byname(product,collection,outputdir,overwrite)
+            if b:
+                ndownloaded = ndownloaded + 1
+        return ndownloaded
+
     def download_product_from_product_list(self, products, outputdir, overwrite):
         ndownloaded = 0
         for product in products:
@@ -421,6 +434,15 @@ class EUMDAC_LOIS:
         lon_min = bbox[2]
         lon_max = bbox[3]
         geometry = [[lon_min, lat_min], [lon_min, lat_max], [lon_max, lat_max], [lon_max, lat_min], [lon_min, lat_min]]
+        geo = 'POLYGON(({}))'.format(','.join(["{} {}".format(*coord) for coord in geometry]))
+        return geo
+
+    def get_geo_from_polygon(self,lat_points,lon_points):
+        #[53.25, 65.85, 9.25, 30.25]
+
+        geometry = []
+        for idx in range(len(lat_points)):
+            geometry.append([lon_points[idx],lat_points[idx]])
         geo = 'POLYGON(({}))'.format(','.join(["{} {}".format(*coord) for coord in geometry]))
         return geo
 

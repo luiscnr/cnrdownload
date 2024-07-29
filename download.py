@@ -76,6 +76,7 @@ def main():
         # edac.download_product_from_product_list(products, outputdir)
 
     if args.mode == "LISTDOWNLOAD": #two columns, date(as YYYY-mm-dd) and granule
+        from eumdac_lois import EUMDAC_LOIS
         if not args.csv_file:
             print('[ERROR] CSV fiie is not defined')
             return
@@ -83,24 +84,22 @@ def main():
             print('[ERROR]Output directory is not defined')
             return
         file_csv = args.csv_file
-        outputdir = args.output
-        if not os.path.exists(file_csv):
-            print(f'[ERROR] CSV file {file_csv} does not exist')
+        outputdir = get_output_dir()
+        if outputdir is None:
             return
-        if not os.path.exists(outputdir):
-            try:
-                os.mkdir(outputdir)
-            except:
-                print(f'[ERROR] Output dir {outputdir} does not exist and could not be created. Review permissions')
 
         import pandas as pd
-        df = pd.read_csv(file_csv)
+        from datetime import datetime as dt
+        df = pd.read_csv(file_csv,sep=';')
+
         if len(df.columns)==2:
-            date_array = df[:,0]
-            granule_array = df[:,1]
+
+            date_array = df.iloc[:,0]
+            granule_array = df.iloc[:,1]
             date_ref = 'YYYY-mm-dd'
             granules_donwload = {}
             for date,granule in zip(date_array,granule_array):
+                #print(date,granule)
                 if date!=date_ref:
                     date_ref = date
                     granules_donwload[date] = [granule]
@@ -108,7 +107,16 @@ def main():
                     granules_donwload[date].append(granule)
 
             for date_h in granules_donwload:
-                print(date_h,'-->',granules_donwload[date_h])
+                outputdir_date = get_output_dir_date(outputdir,dt.strptime(date_h,'%Y-%m-%d'))
+                if outputdir_date is None:
+                    print(f'[WARNING] Output dir for date {date_h} is not valid. Skipping...')
+                print(f'[INFO]{date_h}->{len(granules_donwload[date_h])} granules to be downloaded to {outputdir_date}')
+                edac = EUMDAC_LOIS(args.verbose, args.credentials_user)
+                collection_id = edac.get_olci_collection(date_h,'FR','L1B',False,False)
+                edac.download_product_from_product_list_names(granules_donwload[date_h],collection_id,outputdir_date,False)
+
+
+
 
 
     if args.mode == "REMOVE":
@@ -534,6 +542,10 @@ def main():
 
         if args.check_param:
             return
+        #bbox =  [53.25, 65.85, 9.25, 30.25]
+        lat_points = [53.25, 62, 66.25, 66.25, 64.6, 61.20, 61.20, 58, 53.25, 53.25]
+        lon_points = [9.25, 9.25, 21.8, 26.75, 26.75, 23, 30.25, 30.25, 20.3, 9.25]
+        bbox = [lat_points,lon_points]
 
         run_date = start_date
         while run_date <= end_date:
@@ -577,7 +589,7 @@ def main():
             nfiles = 0
             while nfiles == 0 and ntimes <= 5:
                 products, product_names, collection_id = edac.search_olci_by_bbox(run_date_str, resolution, 'L1B',
-                                                                                  [53.25, 65.85, 9.25, 30.25], 3, 18,
+                                                                                 bbox, 3, 18,
                                                                                   timeliness)
                 nfiles = len(product_names)
                 if nfiles == 0:
@@ -921,6 +933,22 @@ def get_output_dir():
             return None
     return outputdir
 
+def get_output_dir_date(outputdir,date_here):
+    outputdiryear = os.path.join(outputdir,date_here.strftime('%Y'))
+    if not os.path.exists(outputdiryear):
+        try:
+            os.mkdir(outputdiryear)
+        except:
+            print(f'[ERROR] {outputdiryear} does not exist and could not be created')
+            return None
+    outputdirdate = os.path.join(outputdiryear,date_here.strftime('%j'))
+    if not os.path.exists(outputdirdate):
+        try:
+            os.mkdir(outputdirdate)
+        except:
+            print(f'[ERROR] {outputdirdate} does not exist and could not be created')
+            return None
+    return outputdirdate
 
 def get_timeliness(end_date):
     from datetime import datetime as dt
