@@ -253,9 +253,10 @@ def main():
             if not os.path.exists(eum_file_list):
                 work_date = work_date + timedelta(hours=24)
                 continue
-            print(input_path_date)
+
             print(eum_file_list)
             input_path_date = os.path.join(input_path, work_date.strftime('%Y'), work_date.strftime('%j'))
+            print(input_path_date,os.path.isdir(input_path_date))
             granule_list = get_granule_list(eum_file_list)
             print(granule_list)
             ngranules = len(granule_list)
