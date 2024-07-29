@@ -248,6 +248,7 @@ def main():
         fwl.write('Date;NGranules;NFilesAvailable;NFilesMissing;NFilesNR')
         work_date = start_date
         while work_date <= end_date:
+            print(f'[INFO] Date: {work_date}')
             eum_file_list = os.path.join(input_path,f'eum_filelist_bal_{work_date.strftime("%Y%m%d")}.txt')
             if not os.path.exists(eum_file_list):
                 work_date = work_date + timedelta(hours=24)
