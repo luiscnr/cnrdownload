@@ -254,11 +254,11 @@ def main():
                 work_date = work_date + timedelta(hours=24)
                 continue
 
-            print(eum_file_list)
+
             input_path_date = os.path.join(input_path, work_date.strftime('%Y'), work_date.strftime('%j'))
-            print(input_path_date,os.path.isdir(input_path_date))
+
             granule_list = get_granule_list(eum_file_list)
-            print(granule_list)
+            
             ngranules = len(granule_list)
             nfilesnr = 0
             nfilesavailable = 0
