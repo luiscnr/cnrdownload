@@ -467,75 +467,75 @@ class EUMDAC_LOIS:
         geo = 'POLYGON(({}))'.format(','.join(["{} {}".format(*coord) for coord in geometry]))
         return geo
 
-    def get_baltic_ocean(self):
-        import cartopy
-        import cartopy.crs as ccrs
-        import shapely.geometry.polygon
-        import matplotlib.pyplot as plt
-        from shapely import intersection
-        ocean_extent = [53.25, 65.85, 9.25, 30.25]
-        extent = (ocean_extent[2], ocean_extent[3], ocean_extent[0], ocean_extent[1])
-        lon_lat_extent = [
-            [ocean_extent[2], ocean_extent[0]],
-            [ocean_extent[3], ocean_extent[0]],
-            [ocean_extent[3], ocean_extent[1]],
-            [ocean_extent[2], ocean_extent[1]],
-            [ocean_extent[2], ocean_extent[0]],
-        ]
+    # def get_baltic_ocean(self):
+    #     import cartopy
+    #     import cartopy.crs as ccrs
+    #     import shapely.geometry.polygon
+    #     import matplotlib.pyplot as plt
+    #     from shapely import intersection
+    #     ocean_extent = [53.25, 65.85, 9.25, 30.25]
+    #     extent = (ocean_extent[2], ocean_extent[3], ocean_extent[0], ocean_extent[1])
+    #     lon_lat_extent = [
+    #         [ocean_extent[2], ocean_extent[0]],
+    #         [ocean_extent[3], ocean_extent[0]],
+    #         [ocean_extent[3], ocean_extent[1]],
+    #         [ocean_extent[2], ocean_extent[1]],
+    #         [ocean_extent[2], ocean_extent[0]],
+    #     ]
+    #
+    #     geom_extent = shapely.geometry.polygon.Polygon(lon_lat_extent)
+    #     #feature_extent = cartopy.feature.ShapelyFeature(geom_extent,ccrs.PlateCarree())
+    #     geoms = cartopy.feature.OCEAN.intersecting_geometries(extent)
+    #     for geom in geoms:
+    #         geom_bal = intersection(geom, geom_extent)
+    #
+    #     return geom_bal.geoms[3]
+    #     # print(len(geom_bal.geoms))
+    #     # for geom in geom_bal.geoms:
+    #     #     print('=================================')
+    #     #     print(len(geom.exterior.coords))
+    #     #     print('==========================')
+    #     # feature_bal = cartopy.feature.ShapelyFeature(geom_bal.geoms[3], ccrs.PlateCarree())
+    #     # ax = plt.axes(projection=ccrs.PlateCarree(), extent=extent)
+    #     # ax.add_feature(feature_bal,zorder=0, color='red',edgecolor='black', linewidth=0.5)
+    #     # plt.savefig('/mnt/c/DATA_LUIS/OCTACWORK/baltic_ocean.png')
+    #     # plt.close()
 
-        geom_extent = shapely.geometry.polygon.Polygon(lon_lat_extent)
-        #feature_extent = cartopy.feature.ShapelyFeature(geom_extent,ccrs.PlateCarree())
-        geoms = cartopy.feature.OCEAN.intersecting_geometries(extent)
-        for geom in geoms:
-            geom_bal = intersection(geom, geom_extent)
 
-        return geom_bal.geoms[3]
-        # print(len(geom_bal.geoms))
-        # for geom in geom_bal.geoms:
-        #     print('=================================')
-        #     print(len(geom.exterior.coords))
-        #     print('==========================')
-        # feature_bal = cartopy.feature.ShapelyFeature(geom_bal.geoms[3], ccrs.PlateCarree())
-        # ax = plt.axes(projection=ccrs.PlateCarree(), extent=extent)
-        # ax.add_feature(feature_bal,zorder=0, color='red',edgecolor='black', linewidth=0.5)
-        # plt.savefig('/mnt/c/DATA_LUIS/OCTACWORK/baltic_ocean.png')
-        # plt.close()
-
-
-    def is_ocean(self, granule_lonlat, geo_ocean):
-        # import cartopy
-        # import cartopy.crs as ccrs
-        # import matplotlib.pyplot as plt
-
-        # from shapely import intersection
-        # extent = (ocean_extent[2], ocean_extent[3], ocean_extent[0], ocean_extent[1])
-        # lon_lat_extent = [
-        #     [ocean_extent[2], ocean_extent[0]],
-        #     [ocean_extent[3], ocean_extent[0]],
-        #     [ocean_extent[3], ocean_extent[1]],
-        #     [ocean_extent[2], ocean_extent[1]],
-        #     [ocean_extent[2], ocean_extent[0]],
-        # ]
-        #
-        # geom_extent = shapely.geometry.polygon.Polygon(lon_lat_extent)
-        # geoms = cartopy.feature.OCEAN.intersecting_geometries(extent)
-        # for geom in geoms:
-        #     geom_extent_i = intersection(geom, geom_extent)
-        import shapely.geometry.polygon
-        granule_geom = shapely.geometry.polygon.Polygon(granule_lonlat, [])
-        return granule_geom.intersects(geo_ocean)
-
-        # for geom in geoms:
-        #     #print(granule_geom.intersects(geom))
-        #     print(geom)
-
-        # ax = plt.axes(projection=ccrs.PlateCarree(), extent=extent)
-        # #
-        # # # # ax.coastlines(linewidth=0.5)
-        # feature = ax.add_feature(cartopy.feature.OCEAN, zorder=0, edgecolor='black', linewidth=0.5)
-        # #
-        # print(feature.geometries())
-        # plt.close()
+    # def is_ocean(self, granule_lonlat, geo_ocean):
+    #     # import cartopy
+    #     # import cartopy.crs as ccrs
+    #     # import matplotlib.pyplot as plt
+    #
+    #     # from shapely import intersection
+    #     # extent = (ocean_extent[2], ocean_extent[3], ocean_extent[0], ocean_extent[1])
+    #     # lon_lat_extent = [
+    #     #     [ocean_extent[2], ocean_extent[0]],
+    #     #     [ocean_extent[3], ocean_extent[0]],
+    #     #     [ocean_extent[3], ocean_extent[1]],
+    #     #     [ocean_extent[2], ocean_extent[1]],
+    #     #     [ocean_extent[2], ocean_extent[0]],
+    #     # ]
+    #     #
+    #     # geom_extent = shapely.geometry.polygon.Polygon(lon_lat_extent)
+    #     # geoms = cartopy.feature.OCEAN.intersecting_geometries(extent)
+    #     # for geom in geoms:
+    #     #     geom_extent_i = intersection(geom, geom_extent)
+    #     import shapely.geometry.polygon
+    #     granule_geom = shapely.geometry.polygon.Polygon(granule_lonlat, [])
+    #     return granule_geom.intersects(geo_ocean)
+    #
+    #     # for geom in geoms:
+    #     #     #print(granule_geom.intersects(geom))
+    #     #     print(geom)
+    #
+    #     # ax = plt.axes(projection=ccrs.PlateCarree(), extent=extent)
+    #     # #
+    #     # # # # ax.coastlines(linewidth=0.5)
+    #     # feature = ax.add_feature(cartopy.feature.OCEAN, zorder=0, edgecolor='black', linewidth=0.5)
+    #     # #
+    #     # print(feature.geometries())
+    #     # plt.close()
 
     def get_all_available_collections(self, onlyid):
         datastore = eumdac.DataStore(self.token)

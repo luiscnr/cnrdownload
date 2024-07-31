@@ -4,7 +4,8 @@ import shutil
 
 parser = argparse.ArgumentParser(description="CNR Downloaded")
 parser.add_argument("-m", "--mode", help="Mode",
-                    choices=["CHECKPY", "CHECK", "LISTDOWNLOAD", "ARCDOWNLOAD", "BALDOWNLOAD", "MEDDOWNLOAD", "BLKDOWNLOAD",
+                    choices=["CHECKPY", "CHECK", "LISTDOWNLOAD", "ARCDOWNLOAD", "BALDOWNLOAD", "MEDDOWNLOAD",
+                             "BLKDOWNLOAD",
                              "AERONET_CHECK", "AERONET_DOWNLOAD", "CSV_DOWNLOAD", "REMOVE"], required=True)
 parser.add_argument("-o", "--output", help="Ouput directory for downloads")
 parser.add_argument("-d", "--date", help="Date for a single date download")
@@ -39,11 +40,13 @@ def only_test():
 
     return True
 
+
 def only_test_2():
     from eumdac_lois import EUMDAC_LOIS
-    edac = EUMDAC_LOIS(True,args.credentials_user)
+    edac = EUMDAC_LOIS(True, args.credentials_user)
     edac.get_baltic_ocean()
     return True
+
 
 def main():
     print('STARTED')
@@ -80,11 +83,10 @@ def main():
         # edac.download_product_byname(pname,collection_id,outputdir,False)
         # edac.download_product_from_product_list(products, outputdir)
 
-    if args.mode == "LISTDOWNLOAD": #two columns, date(as YYYY-mm-dd) and granule
+    if args.mode == "LISTDOWNLOAD":  # two columns, date(as YYYY-mm-dd) and granule
         from eumdac_lois import EUMDAC_LOIS
-        edac = EUMDAC_LOIS(True, args.credentials_user)
-        baltic_ocean = edac.get_baltic_ocean()
-
+        import pandas as pd
+        from datetime import datetime as dt
 
         if not args.csv_file:
             print('[ERROR] CSV file is not defined')
@@ -97,45 +99,34 @@ def main():
         if outputdir is None:
             return
 
+        df = pd.read_csv(file_csv, sep=';')
 
+        if len(df.columns) == 2:
 
-        import pandas as pd
-        from datetime import datetime as dt
-        df = pd.read_csv(file_csv,sep=';')
-
-        if len(df.columns)==2:
-
-            date_array = df.iloc[:,0]
-            granule_array = df.iloc[:,1]
+            date_array = df.iloc[:, 0]
+            granule_array = df.iloc[:, 1]
             date_ref = 'YYYY-mm-dd'
             granules_donwload = {}
-            for date,granule in zip(date_array,granule_array):
-                #print(date,granule)
-                if date!=date_ref:
+            for date, granule in zip(date_array, granule_array):
+                if date != date_ref:
                     date_ref = date
                     granules_donwload[date] = [granule]
                 else:
                     granules_donwload[date].append(granule)
 
             for date_h in granules_donwload:
-                outputdir_date = get_output_dir_date(outputdir,dt.strptime(date_h,'%Y-%m-%d'))
+                outputdir_date = get_output_dir_date(outputdir, dt.strptime(date_h, '%Y-%m-%d'))
                 if outputdir_date is None:
                     print(f'[WARNING] Output dir for date {date_h} is not valid. Skipping...')
-                print(dt.utcnow())
+                
                 if 3 <= dt.utcnow().hour <= 6:
                     print(f'[WARNING] Granules can not be downloaded from 3 to 6')
                     return
                 print(f'[INFO]{date_h}->{len(granules_donwload[date_h])} granules to be downloaded to {outputdir_date}')
                 edac = EUMDAC_LOIS(args.verbose, args.credentials_user)
-                collection_id = edac.get_olci_collection(date_h,'FR','L1B',False,False)
-                edac.download_product_from_product_list_names(granules_donwload[date_h],collection_id,outputdir_date,False)
-
-
-
-
-
-
-
+                collection_id = edac.get_olci_collection(date_h, 'FR', 'L1B', False, False)
+                edac.download_product_from_product_list_names(granules_donwload[date_h], collection_id, outputdir_date,
+                                                              False)
 
     if args.mode == "REMOVE":
         from datetime import datetime as dt
@@ -560,10 +551,10 @@ def main():
 
         if args.check_param:
             return
-        #bbox =  [53.25, 65.85, 9.25, 30.25]
+        # bbox =  [53.25, 65.85, 9.25, 30.25]
         lat_points = [53.25, 62, 66.25, 66.25, 64.6, 61.20, 61.20, 58, 53.25, 53.25]
         lon_points = [9.25, 9.25, 21.8, 26.75, 26.75, 23, 30.25, 30.25, 20.3, 9.25]
-        bbox = [lat_points,lon_points]
+        bbox = [lat_points, lon_points]
 
         run_date = start_date
         while run_date <= end_date:
@@ -607,7 +598,7 @@ def main():
             nfiles = 0
             while nfiles == 0 and ntimes <= 5:
                 products, product_names, collection_id = edac.search_olci_by_bbox(run_date_str, resolution, 'L1B',
-                                                                                 bbox, 3, 18,
+                                                                                  bbox, 3, 18,
                                                                                   timeliness)
                 nfiles = len(product_names)
                 if nfiles == 0:
@@ -951,15 +942,16 @@ def get_output_dir():
             return None
     return outputdir
 
-def get_output_dir_date(outputdir,date_here):
-    outputdiryear = os.path.join(outputdir,date_here.strftime('%Y'))
+
+def get_output_dir_date(outputdir, date_here):
+    outputdiryear = os.path.join(outputdir, date_here.strftime('%Y'))
     if not os.path.exists(outputdiryear):
         try:
             os.mkdir(outputdiryear)
         except:
             print(f'[ERROR] {outputdiryear} does not exist and could not be created')
             return None
-    outputdirdate = os.path.join(outputdiryear,date_here.strftime('%j'))
+    outputdirdate = os.path.join(outputdiryear, date_here.strftime('%j'))
     if not os.path.exists(outputdirdate):
         try:
             os.mkdir(outputdirdate)
@@ -967,6 +959,7 @@ def get_output_dir_date(outputdir,date_here):
             print(f'[ERROR] {outputdirdate} does not exist and could not be created')
             return None
     return outputdirdate
+
 
 def get_timeliness(end_date):
     from datetime import datetime as dt
