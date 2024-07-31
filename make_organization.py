@@ -158,9 +158,62 @@ def do_test_2():
 
 
 
+def do_test_3():
+    file_nr = '/mnt/c/DATA_LUIS/OCTACWORK/FilesNRToDelete.slurm'
+    files_nr_list = {}
+    fr = open(file_nr,'r')
+    for line in fr:
+        if line.strip().startswith('rm'):
+            file_here = line.split(' ')[1].strip()
+            file_here_l = os.path.basename(file_here).split('_')
+            start = dt.strptime(file_here_l[7],'%Y%m%dT%H%M%S')
+            stop = dt.strptime(file_here_l[8],'%Y%m%dT%H%M%S')
+            key = start.strftime('%Y-%m-%d')
+            if key not in files_nr_list.keys():
+                files_nr_list[key]={
+                    'start':[start],
+                    'stop': [stop]
+                }
+            else:
+                files_nr_list[key]['start'].append(start)
+                files_nr_list[key]['stop'].append(stop)
+
+    fr.close()
+
+
+    file_granules = '/mnt/c/DATA_LUIS/OCTACWORK/GranulesToDownload_UPDATED.txt'
+    file_nonrt = '/mnt/c/DATA_LUIS/OCTACWORK/GranulesToDownload_UPDATED_WITH_NRT.txt'
+    frg = open(file_granules,'r')
+    fw = open(file_nonrt,'w')
+    for line in frg:
+        line_s = line.split(';')
+        key = line_s[0].strip()
+        file_here_l = line_s[1].strip().split('_')
+        start_f = dt.strptime(file_here_l[7], '%Y%m%dT%H%M%S')
+        stop_f = dt.strptime(file_here_l[8], '%Y%m%dT%H%M%S')
+        available = False
+        if key in files_nr_list:
+            start_nr = files_nr_list[key]['start']
+            stop_nr = files_nr_list[key]['stop']
+            for start_nr_h,stop_nr_h in zip(start_nr,stop_nr):
+                if start_nr_h <= start_f <= stop_nr_h:
+                    available = True
+                    break
+                if start_nr_h <= stop_f <= stop_nr_h:
+                    available = True
+                    break
+        if available:
+            fw.write(line)
+
+    frg.close()
+    fw.close()
+
+
 def launch_test():
     # do_test_1()
-    do_test_2()
+    # do_test_2()
+    do_test_3()
+
 def main():
     print('[INFO] Started organization')
     if args.mode == 'TEST':
@@ -258,7 +311,7 @@ def main():
             input_path_date = os.path.join(input_path, work_date.strftime('%Y'), work_date.strftime('%j'))
 
             granule_list = get_granule_list(eum_file_list)
-            
+
             ngranules = len(granule_list)
             nfilesnr = 0
             nfilesavailable = 0

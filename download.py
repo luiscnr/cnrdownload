@@ -39,11 +39,16 @@ def only_test():
 
     return True
 
+def only_test_2():
+    from eumdac_lois import EUMDAC_LOIS
+    edac = EUMDAC_LOIS(True,args.credentials_user)
+    edac.get_baltic_ocean()
+    return True
 
 def main():
     print('STARTED')
 
-    # if only_test():
+    # if only_test_2():
     #     return
 
     if args.mode == "CHECKPY":
@@ -77,8 +82,12 @@ def main():
 
     if args.mode == "LISTDOWNLOAD": #two columns, date(as YYYY-mm-dd) and granule
         from eumdac_lois import EUMDAC_LOIS
+        edac = EUMDAC_LOIS(True, args.credentials_user)
+        baltic_ocean = edac.get_baltic_ocean()
+
+
         if not args.csv_file:
-            print('[ERROR] CSV fiie is not defined')
+            print('[ERROR] CSV file is not defined')
             return
         if not args.output:
             print('[ERROR]Output directory is not defined')
@@ -87,6 +96,8 @@ def main():
         outputdir = get_output_dir()
         if outputdir is None:
             return
+
+
 
         import pandas as pd
         from datetime import datetime as dt
@@ -110,10 +121,17 @@ def main():
                 outputdir_date = get_output_dir_date(outputdir,dt.strptime(date_h,'%Y-%m-%d'))
                 if outputdir_date is None:
                     print(f'[WARNING] Output dir for date {date_h} is not valid. Skipping...')
+                print(dt.utcnow())
+                if 3 <= dt.utcnow().hour <= 6:
+                    print(f'[WARNING] Granules can not be downloaded from 3 to 6')
+                    return
                 print(f'[INFO]{date_h}->{len(granules_donwload[date_h])} granules to be downloaded to {outputdir_date}')
                 edac = EUMDAC_LOIS(args.verbose, args.credentials_user)
                 collection_id = edac.get_olci_collection(date_h,'FR','L1B',False,False)
                 edac.download_product_from_product_list_names(granules_donwload[date_h],collection_id,outputdir_date,False)
+
+
+
 
 
 
