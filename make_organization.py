@@ -209,11 +209,28 @@ def do_test_3():
     fw.close()
 
 
+def do_test_4():
+    file_dates = '/store3/OC/OLCI_BAL/org_scripts/dates_to_complete.txt'
+    fw = open(file_dates,'w')
+    dir_orig = '/store3/OC/OLCI_BAL/POLYMER_orig'
+    dir_dest = '/store3/OC/OLCI_BAL/POLYMER_BAL202411'
+    work_date = dt(2017, 1, 1)
+    end_date = dt(2023, 12, 31)
+    while work_date<=end_date:
+        yyyy = work_date.strftime('%Y')
+        jjj = work_date.strftime('%j')
+        dir_orig = os.path.join(dir_orig,yyyy,jjj)
+        dir_dest = os.path.join(dir_dest,yyyy,jjj)
+        if os.path.isdir(dir_orig) and not os.path.exists(dir_dest):
+            fw.write(work_date.strftime('%Y-%m-%d'))
+            fw.write('\n')
+        work_date = work_date + timedelta(hours=24)
+    fw.close()
 def launch_test():
     # do_test_1()
     # do_test_2()
-    do_test_3()
-
+    # do_test_3()
+    do_test_4()
 def main():
     print('[INFO] Started organization')
     if args.mode == 'TEST':
