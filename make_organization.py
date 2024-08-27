@@ -219,9 +219,9 @@ def do_test_4():
     while work_date<=end_date:
         yyyy = work_date.strftime('%Y')
         jjj = work_date.strftime('%j')
-        dir_orig = os.path.join(dir_orig,yyyy,jjj)
-        dir_dest = os.path.join(dir_dest,yyyy,jjj)
-        if os.path.isdir(dir_orig) and not os.path.exists(dir_dest):
+        dir_orig_date = os.path.join(dir_orig,yyyy,jjj)
+        dir_dest_date = os.path.join(dir_dest,yyyy,jjj)
+        if os.path.isdir(dir_orig_date) and not os.path.exists(dir_dest_date):
             fw.write(work_date.strftime('%Y-%m-%d'))
             fw.write('\n')
         work_date = work_date + timedelta(hours=24)
