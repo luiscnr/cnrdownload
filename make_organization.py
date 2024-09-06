@@ -3,8 +3,12 @@ import argparse, os
 from datetime import datetime as dt
 from datetime import timedelta
 
+import pandas as pd
+from eumdac_lois import EUMDAC_LOIS
+import numpy as np
+
 parser = argparse.ArgumentParser(description="CNR Downloaded")
-parser.add_argument("-m", "--mode", help="Mode", choices=["REMOVE_NR","MOVE","TEST","CHECK_S3"], required=True)
+parser.add_argument("-m", "--mode", help="Mode", choices=["REMOVE_NR","MOVE","TEST","CHECK_S3","TARA_META_OLCI_GRANULES"], required=True)
 parser.add_argument("-i", "--input", help="Input file/directory")
 parser.add_argument("-o", "--output", help="Ouput file/directory")
 parser.add_argument("-script","--script_file",help="Prepare script file")
@@ -14,6 +18,36 @@ parser.add_argument("-ed", "--end_date", help="End date.")
 
 args = parser.parse_args()
 
+
+def get_olci_granules_from_tara_metadata(input_folder,output_file):
+    fw = open(output_file,'w')
+    fw.write('Date;Granule')
+    for name in os.listdir(input_folder):
+        if not name.endswith('.csv'):continue
+        print(f'[INFO] Working with file name: {name}')
+        file_csv = os.path.join(input_folder,name)
+        df = pd.read_csv(file_csv,sep=',')
+        time_array = df['time_sr']
+        lat_array = df['lat']
+        lon_array = df['lon']
+        lat_min = np.min(lat_array)-0.1
+        lat_max = np.max(lat_array)+0.1
+        lon_min = np.min(lon_array)-0.1
+        lon_max = np.max(lon_array)+0.1
+        time_min = dt.strptime(time_array[0],'%Y-%m-%d %H:%M:%S')
+        time_max = dt.strptime(time_array[len(time_array)-1], '%Y-%m-%d %H:%M:%S')
+
+        edac = EUMDAC_LOIS(True, None)
+
+        products, list_products, collection_id = edac.search_olci_by_bbox(time_min,'FR','L2',[lat_min,lat_max,lon_min,lon_max],time_min.hour,time_max.hour+1,'NT')
+
+        if len(list_products)>0:
+            for p in list_products:
+                fw.write('\n')
+                fw.write(f'{time_min.strftime("%Y-%m-%d")};{p}')
+
+
+    fw.close()
 
 def get_dates_from_arg():
     if not args.start_date:
@@ -226,16 +260,52 @@ def do_test_4():
             fw.write('\n')
         work_date = work_date + timedelta(hours=24)
     fw.close()
+
+
+def do_test_5():
+    dir_eum = '/mnt/c/DATA_LUIS/OCTACWORK/2024'
+    file_granules = '/mnt/c/DATA_LUIS/OCTACWORK/GranulesToDownload2024_Jul.txt'
+    fw = open(file_granules,'w')
+    work_date = dt(2024,7,1)
+    end_date = dt(2024,7,31)
+    while work_date<=end_date:
+        file_g = os.path.join(dir_eum,f'eum_filelist_bal_{work_date.strftime("%Y%m%d")}.txt')
+        fr = open(file_g,'r')
+        for line in fr:
+            line_out = f'{work_date.strftime("%Y-%m-%d")};{line.strip()}'
+            fw.write(line_out)
+            fw.write('\n')
+        fr.close()
+        work_date = work_date + timedelta(hours=24)
+
+    fw.close()
 def launch_test():
     # do_test_1()
     # do_test_2()
     # do_test_3()
-    do_test_4()
+    # do_test_4()
+    do_test_5()
 def main():
     print('[INFO] Started organization')
     if args.mode == 'TEST':
         launch_test()
         return
+
+    if args.mode == 'TARA_META_OLCI_GRANULES':
+        input_path = args.input
+        output_file = args.output
+        if not os.path.isdir(input_path):
+            print(f'[ERROR] Input path {input_path} must be a directory')
+            return
+        if not os.path.isdir(os.path.dirname(output_file)):
+            print(f'[ERROR] Output path {os.path.dirname(output_file)} is not a valid directory')
+            return
+        if not output_file.endswith('.csv'):
+            print(f'[ERROR] Output file {output_file} must be a csv file')
+            return
+        get_olci_granules_from_tara_metadata(input_path,output_file)
+        return
+
     start_date, end_date = get_dates_from_arg()
 
 

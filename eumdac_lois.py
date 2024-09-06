@@ -369,7 +369,9 @@ class EUMDAC_LOIS:
         datastore = eumdac.DataStore(self.token)
         selected_collection = datastore.get_collection(collection_id)
         try:
+
             products = selected_collection.search(title=product_name)
+
             b = False
             for p in products:
                 b = self.download_product(p, outputdir, overwrite)

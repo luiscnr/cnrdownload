@@ -124,7 +124,17 @@ def main():
                     return
                 print(f'[INFO]{date_h}->{len(granules_donwload[date_h])} granules to be downloaded to {outputdir_date}')
                 edac = EUMDAC_LOIS(args.verbose, args.credentials_user)
-                collection_id = edac.get_olci_collection(date_h, 'FR', 'L1B', False, False)
+                level = 'L1B'
+                resolution = 'FR'
+                if 'WFR' in granules_donwload[date_h][0]:
+                    level = 'L2'
+                if 'WRR' in granules_donwload[date_h][0]:
+                    level = 'L2'
+                    resolution = 'RR'
+                if 'ERR' in granules_donwload[date_h][0]:
+                    resolution = 'RR'
+
+                collection_id = edac.get_olci_collection(date_h, resolution,level, False, False)
                 edac.download_product_from_product_list_names(granules_donwload[date_h], collection_id, outputdir_date,
                                                               False)
 
