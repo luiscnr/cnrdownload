@@ -337,6 +337,13 @@ def main():
                     else:
                         print('f[WARNING] Unzip process incompleted, path was not found')
 
+                file_browse = os.path.join(input_path_date,'browse.jpg')
+                file_metadata = os.path.join(input_path_date,'EOPMetadata.xml')
+                file_manifest = os.path.join(input_path_date,'manifest.xml')
+                if os.path.exists(file_browse):os.remove(file_browse)
+                if os.path.exists(file_metadata):os.remove(file_metadata)
+                if os.path.exists(file_manifest):os.remove(file_manifest)
+
             work_date = work_date + timedelta(hours=24)
 
     if args.mode == 'REMOVE_NR':
