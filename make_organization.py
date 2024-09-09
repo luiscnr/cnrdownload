@@ -8,7 +8,7 @@ from eumdac_lois import EUMDAC_LOIS
 import numpy as np
 
 parser = argparse.ArgumentParser(description="CNR Downloaded")
-parser.add_argument("-m", "--mode", help="Mode", choices=["REMOVE_NR","MOVE","TEST","CHECK_S3","TARA_META_OLCI_GRANULES"], required=True)
+parser.add_argument("-m", "--mode", help="Mode", choices=["REMOVE_NR","MOVE","TEST","CHECK_S3","TARA_META_OLCI_GRANULES","UNZIP_S3"], required=True)
 parser.add_argument("-i", "--input", help="Input file/directory")
 parser.add_argument("-o", "--output", help="Ouput file/directory")
 parser.add_argument("-script","--script_file",help="Prepare script file")
@@ -308,7 +308,36 @@ def main():
 
     start_date, end_date = get_dates_from_arg()
 
+    if args.mode == 'UNZIP_S3':
+        if start_date is None or end_date is None: return
+        input_path = args.input
+        if not os.path.isdir(input_path):
+            print(f'[ERROR] Input path {input_path} is not a valid directory')
+            return
+        work_date = start_date
+        while work_date <= end_date:
+            input_path_date = os.path.join(input_path, work_date.strftime('%Y'), work_date.strftime('%j'))
+            if os.path.exists(input_path_date):
+                print(f'[INFO] Input path date: {input_path_date} ')
+                for name in os.listdir(input_path_date):
+                    if not name.endswith('.zip'):continue
+                    input_path_here = os.path.join(input_path_date, name)
+                    if not os.path.isfile(input_path_here):continue
+                    print(f'[INFO] Input path file to unzip: {input_path_here}')
+                    cmd = f'unzip -o {input_path_here} -d {input_path_date}'
+                    prog = subprocess.Popen(cmd, shell=True, stderr=subprocess.PIPE)
+                    out, err = prog.communicate()
+                    if err:
+                        print(err)
 
+                    path_unzipped = input_path_here[:-4]
+                    if os.path.exists(path_unzipped):
+                        os.remove(input_path_here)
+                        print(f'[INFO] Unzip process completed')
+                    else:
+                        print('f[WARNING] Unzip process incompleted, path was not found')
+
+            work_date = work_date + timedelta(hours=24)
 
     if args.mode == 'REMOVE_NR':
         if start_date is None or end_date is None: return
