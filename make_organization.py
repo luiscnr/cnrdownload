@@ -263,11 +263,11 @@ def do_test_4():
 
 
 def do_test_5():
-    dir_eum = '/mnt/c/DATA_LUIS/OCTACWORK/2024'
-    file_granules = '/mnt/c/DATA_LUIS/OCTACWORK/GranulesToDownload2024_Jul.txt'
+    dir_eum = '/mnt/c/DATA_LUIS/OCTACWORK/2023'
+    file_granules = '/mnt/c/DATA_LUIS/OCTACWORK/GranulesToDownload2023_May.txt'
     fw = open(file_granules,'w')
-    work_date = dt(2024,7,1)
-    end_date = dt(2024,7,31)
+    work_date = dt(2023,5,11)
+    end_date = dt(2023,5,15)
     while work_date<=end_date:
         file_g = os.path.join(dir_eum,f'eum_filelist_bal_{work_date.strftime("%Y%m%d")}.txt')
         fr = open(file_g,'r')

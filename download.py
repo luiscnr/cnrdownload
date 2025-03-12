@@ -102,6 +102,7 @@ def main():
         df = pd.read_csv(file_csv, sep=';')
 
         if len(df.columns) == 2:
+            print('[INFO] Reading list...')
 
             date_array = df.iloc[:, 0]
             granule_array = df.iloc[:, 1]
@@ -135,6 +136,8 @@ def main():
                     resolution = 'RR'
 
                 collection_id = edac.get_olci_collection(date_h, resolution,level, False, False)
+                print(collection_id)
+                print(granules_donwload)
                 edac.download_product_from_product_list_names(granules_donwload[date_h], collection_id, outputdir_date,
                                                               False)
 
@@ -500,7 +503,7 @@ def main():
             nfiles = 0
             while nfiles == 0 and ntimes <= 5:
                 products, product_names, collection_id = edac.search_olci_by_bbox(run_date_str, resolution, 'L2',
-                                                                                  [40.0, 48.0, 36.5, 42.0], -1, -1,
+                                                                                  [40.0, 48.0, 36.5, 42], -1, -1,
                                                                                   timeliness)
                 nfiles = len(product_names)
                 if nfiles == 0:
